@@ -6,9 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class Client extends Model
 {
-    protected $fillable = [
-        'nom', 'email', 'telephone', 'date_reabonnement', 'a_paye'
+        protected $fillable = [
+        'nom', 'email', 'telephone', 'date_reabonnement', 'a_paye', 'lieu'
     ];
+
 
     protected $casts = [
         'date_reabonnement' => 'date',
