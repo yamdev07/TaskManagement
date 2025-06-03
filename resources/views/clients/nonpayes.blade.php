@@ -6,12 +6,14 @@
 <div class="container mt-5">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h1>Clients non payés</h1>
-        <a href="{{ route('clients.create') }}" class="btn btn-success">+ Ajouter un client</a>
     </div>
-    
-    <div class="row mb-3">
+
+    <div class="row mb-3 align-items-center">
         <div class="col-md-6">
             <input type="text" id="searchInput" class="form-control" placeholder="Rechercher par nom ou lieu...">
+        </div>
+        <div class="col-md-6 text-end">
+            <a href="{{ route('clients.create') }}" class="btn btn-success">+ Ajouter un client</a>
         </div>
     </div>
 
@@ -27,6 +29,7 @@
                     <th>Lieu</th>
                     <th>Date Réabonnement</th>
                     <th>A payé</th>
+                    <th>Actif</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -38,7 +41,16 @@
                         <td>{{ $client->telephone }}</td>
                         <td>{{ $client->lieu }}</td>
                         <td>{{ \Carbon\Carbon::parse($client->date_reabonnement)->format('d/m/Y') }}</td>
-                        <td><span class="badge bg-danger">Non</span></td>
+                        <td>
+                            <span class="badge bg-danger">Non</span>
+                        </td>
+                        <td>
+                            @if ($client->actif)
+                                <span class="badge bg-success">Actif</span>
+                            @else
+                                <span class="badge bg-secondary">Coupé</span>
+                            @endif
+                        </td>
                         <td>
                             <a href="{{ route('clients.edit', $client->id) }}" class="btn btn-primary btn-sm">Modifier</a>
                         </td>
@@ -67,37 +79,37 @@
             </div>
         </div>
     </div>
+@endif
 
-    <script>
-        window.addEventListener('DOMContentLoaded', function () {
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Modal succès
+        @if(session('success'))
             var successModal = new bootstrap.Modal(document.getElementById('successModal'));
             successModal.show();
-
             setTimeout(function () {
                 successModal.hide();
             }, 3000);
-        });
+        @endif
 
-        // Filtrage dynamique
-        document.addEventListener('DOMContentLoaded', function () {
-            const searchInput = document.getElementById('searchInput');
-            const rows = document.querySelectorAll('tbody tr');
+        // Filtrage dynamique par nom ou lieu
+        const searchInput = document.getElementById('searchInput');
+        const rows = document.querySelectorAll('tbody tr');
 
-            searchInput.addEventListener('input', function () {
-                const value = this.value.toLowerCase();
+        searchInput.addEventListener('input', function () {
+            const value = this.value.toLowerCase();
 
-                rows.forEach(row => {
-                    const nom = row.dataset.nom;
-                    const lieu = row.dataset.lieu;
+            rows.forEach(row => {
+                const nom = row.dataset.nom;
+                const lieu = row.dataset.lieu;
 
-                    if (nom.includes(value) || lieu.includes(value)) {
-                        row.style.display = '';
-                    } else {
-                        row.style.display = 'none';
-                    }
-                });
+                if (nom.includes(value) || lieu.includes(value)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
             });
         });
-    </script>
-@endif
+    });
+</script>
 @endsection

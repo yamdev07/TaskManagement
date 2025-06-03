@@ -10,7 +10,7 @@ Route::get('/', function () {
 Route::get('/clients', [ClientController::class, 'index'])->name('clients.index');
 Route::get('/clients/reabonnement', [ClientController::class, 'aReabonnement'])->name('clients.reabonnement');
 Route::get('/clients/depasses', [ClientController::class, 'depasses'])->name('clients.depasses');
-Route::get('/clients/payes', [ClientController::class, 'payes'])->name('clients.payes');
+Route::get('/clients/payes', [ClientController::class, 'clientsPayes'])->name('clients.payes');
 Route::get('/clients/nonpayes', [ClientController::class, 'nonPayes'])->name('clients.nonpayes');
 Route::get('/clients/notifier', [ClientController::class, 'envoyerNotifications'])->name('clients.notifier');
 Route::get('/clients/envoyer-notifications', [ClientController::class, 'envoyerNotifications'])->name('clients.envoyerNotifications');

@@ -6,12 +6,14 @@
 <div class="container mt-5">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h1>Clients avec réabonnement à venir</h1>
-        <a href="{{ route('clients.create') }}" class="btn btn-success">+ Ajouter un client</a>
     </div>
     
-    <div class="row mb-3">
+   <div class="row mb-3 align-items-center">
         <div class="col-md-6">
             <input type="text" id="searchInput" class="form-control" placeholder="Rechercher par nom ou lieu...">
+        </div>
+        <div class="col-md-6 text-end">
+            <a href="{{ route('clients.create') }}" class="btn btn-success">+ Ajouter un client</a>
         </div>
     </div>
 
