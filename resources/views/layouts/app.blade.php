@@ -4,12 +4,14 @@
     <meta charset="UTF-8">
     <title>@yield('title') - AnyxTech</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
         body {
             background-color: #f9f9f9;
         }
         .navbar {
-            background-color:rgb(13, 79, 155);
+            background-color: #1e4d9f;
         }
         .navbar a, .navbar .navbar-brand {
             color: #fff !important;
@@ -59,6 +61,7 @@
     <div class="container mt-4">
         @yield('content')
     </div>
+    <x-footer />
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
