@@ -45,13 +45,13 @@ class ClientController extends Controller
 
     public function clientsPayes()
     {
-        $clients = Client::where('a_paye', true)->get();
+        $clients = Client::where('a_paye', 'payé')->get();
         return view('clients.payes', compact('clients'));
     }
 
     public function nonPayes()
     {
-        $clients = Client::where('a_paye', false)->get();
+        $clients = Client::where('a_paye', 'non payé')->get();
         return view('clients.nonpayes', compact('clients'));
     }
 
@@ -89,12 +89,11 @@ class ClientController extends Controller
             'categorie'          => 'nullable|string|max:100',
             'date_reabonnement'  => 'required|date',
             'montant'            => 'required|numeric|min:0',
-            'email'              => 'nullable|email|max:255',
-            'a_paye'             => 'nullable|boolean',
+            'a_paye'             => 'nullable|string|in:payé,non payé',
         ]);
 
-        // Assurez-vous que la case à cocher est bien gérée
-        $validatedData['a_paye'] = $request->has('a_paye');
+        // Si la case paiement n'est pas envoyée, par défaut "non payé"
+        $validatedData['a_paye'] = $request->input('a_paye', 'non payé');
 
         Client::create($validatedData);
 
@@ -106,24 +105,40 @@ class ClientController extends Controller
         return view('clients.edit', compact('client'));
     }
 
-    public function update(Request $request, Client $client)
+    public function update(Request $request, $id)
     {
-        $validated = $request->validate([
-            'nom_client'         => 'required|string|max:255',
-            'contact'            => 'required|string|max:20',
-            'sites_relais'       => 'nullable|string|max:255',
-            'statut'             => 'nullable|string|max:50',
-            'categorie'          => 'nullable|string|max:100',
-            'date_reabonnement'  => 'required|date',
-            'montant'            => 'required|numeric|min:0',
-            'email'              => 'nullable|email|max:255',
-            'a_paye'             => 'nullable|boolean',
+        $client = Client::findOrFail($id);
+
+        $request->validate([
+            'nom_client' => 'required|string|max:255',
+            'contact' => 'required|string|max:20',
+            'sites_relais' => 'nullable|string|max:255',
+            'statut' => 'required|string|in:actif,inactif,suspendu',
+            'categorie' => 'nullable|string|max:100',
+            'date_reabonnement' => 'required|date',
+            'montant' => 'required|numeric|min:0',
+            'a_paye' => 'required|string|in:payé,non payé',
         ]);
 
-        $validated['a_paye'] = $request->has('a_paye');
+        $client->nom_client = $request->nom_client;
+        $client->contact = $request->contact;
+        $client->sites_relais = $request->sites_relais;
+        $client->statut = $request->statut;
+        $client->categorie = $request->categorie;
+        $client->date_reabonnement = $request->date_reabonnement;
+        $client->montant = $request->montant;
+        $client->a_paye = $request->a_paye;
 
-        $client->update($validated);
+        $client->save();
 
-        return redirect()->route('clients.index')->with('success', 'Client mis à jour avec succès !');
+        return redirect()->route('clients.index')
+                         ->with('success', 'Client modifié avec succès !');
     }
+
+    public function clientsActifs()
+    {
+        $clientsActifs = Client::where('statut', 'actif')->get();
+        return view('clients.actifs', compact('clientsActifs'));    
+    }
+
 }

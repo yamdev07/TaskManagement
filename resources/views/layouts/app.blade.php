@@ -52,6 +52,10 @@
                     <li class="nav-item"><a href="{{ route('clients.nonpayes') }}" class="nav-link {{ request()->routeIs('clients.nonpayes') ? 'active' : '' }}">Non payés</a></li>
                     <li class="nav-item"><a href="{{ route('clients.reabonnement') }}" class="nav-link {{ request()->routeIs('clients.reabonnement') ? 'active' : '' }}">Réabonnement</a></li>
                     <li class="nav-item"><a href="{{ route('clients.depasses') }}" class="nav-link {{ request()->routeIs('clients.depasses') ? 'active' : '' }}">Dépassés</a></li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ route('clients.actifs') }}">Clients Actifs</a>
+                    </li>
+
                 </ul>
             </div>
         </div>

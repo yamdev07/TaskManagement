@@ -20,6 +20,8 @@ Route::prefix('clients')->name('clients.')->group(function () {
     Route::get('/depasses', [ClientController::class, 'depasses'])->name('depasses');
     Route::get('/payes', [ClientController::class, 'clientsPayes'])->name('payes');
     Route::get('/nonpayes', [ClientController::class, 'nonPayes'])->name('nonpayes');
+    Route::get('/clients/actifs', [ClientController::class, 'clientsActifs'])->name('clients.actifs');
+
 
     // Notifications
     Route::get('/envoyer-notifications', [ClientController::class, 'envoyerNotifications'])->name('envoyerNotifications');

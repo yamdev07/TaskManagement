@@ -27,7 +27,11 @@
 
                 <div class="mb-3">
                     <label for="statut" class="form-label">Statut</label>
-                    <input type="text" name="statut" class="form-control" value="{{ $client->statut }}">
+                    <select name="statut" class="form-select" required>
+                        <option value="actif" {{ $client->statut === 'actif' ? 'selected' : '' }}>Actif</option>
+                        <option value="inactif" {{ $client->statut === 'inactif' ? 'selected' : '' }}>Inactif</option>
+                        <option value="suspendu" {{ $client->statut === 'suspendu' ? 'selected' : '' }}>Suspendu</option>
+                    </select>
                 </div>
 
                 <div class="mb-3">
@@ -45,19 +49,52 @@
                     <input type="number" name="montant" class="form-control" value="{{ $client->montant }}" required>
                 </div>
 
-                <div class="mb-3 form-check">
-                    <input 
-                        type="checkbox" 
-                        name="actif" 
-                        class="form-check-input" 
-                        id="actif" 
-                        {{ $client->actif ? 'checked' : '' }}>
-                    <label class="form-check-label" for="actif">Client actif ?</label>
+                {{-- Nouveau champ paiement --}}
+                <div class="mb-3">
+                    <label for="a_paye" class="form-label">Statut de paiement</label>
+                    <select name="a_paye" class="form-select" required>
+                        <option value="payé" {{ strtolower($client->a_paye ?? '') === 'payé' ? 'selected' : '' }}>Payé</option>
+                        <option value="non payé" {{ strtolower($client->a_paye ?? '') === 'non payé' ? 'selected' : '' }}>Non payé</option>
+                    </select>
                 </div>
+
 
                 <button type="submit" class="btn btn-primary">Mettre à jour</button>
                 <a href="{{ route('clients.index') }}" class="btn btn-secondary">Annuler</a>
             </form>
         </div>
     </div>
+
+    {{-- Modal succès --}}
+    @if(session('success'))
+        <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-success">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title" id="successModalLabel">Succès</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                    </div>
+                    <div class="modal-body">
+                        {{ session('success') }}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-success" data-bs-dismiss="modal">OK</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var successModal = new bootstrap.Modal(document.getElementById('successModal'));
+                successModal.show();
+
+                setTimeout(() => {
+                    successModal.hide();
+                    window.location.href = "{{ route('clients.index') }}";
+                }, 3000);
+            });
+        </script>
+    @endif
+
 @endsection
