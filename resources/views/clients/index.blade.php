@@ -8,12 +8,39 @@
         <h1 class="display-5 fw-bold">Liste des Clients</h1>
     </div>
 
+    {{-- Carte des stats --}}
+    @if ($clients->count())
+        @php
+            $total = $clients->count();
+            $payes = $clients->where('statut', 'payé')->count();
+            $nonPayes = $total - $payes;
+        @endphp
+
+        <div class="mb-4 d-flex justify-content-center gap-3">
+            <div class="card text-white bg-success" style="min-width: 150px;">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Clients Payés</h5>
+                    <p class="card-text fs-4">{{ $payes }} / {{ $total }}</p>
+                </div>
+            </div>
+
+            <div class="card text-white bg-danger" style="min-width: 150px;">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Non Payés</h5>
+                    <p class="card-text fs-4">{{ $nonPayes }} / {{ $total }}</p>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- Barre de recherche et bouton ajouter --}}
     <x-search-add 
         :add-url="route('clients.create')" 
         add-text="+ Ajouter un client" 
         search-placeholder="Rechercher par nom ou site relais..." 
     />
 
+    {{-- Tableau des clients --}}
     @if ($clients->isEmpty())
         <div class="alert alert-info">Aucun client trouvé.</div>
     @else
@@ -25,10 +52,10 @@
                     <th>Contact</th>
                     <th>Site relais</th>
                     <th>Statut</th>
+                    <th>Paiement</th>
                     <th>Catégorie</th>
                     <th>Date de réabonnement</th>
                     <th>Montant</th>
-                    <th>Paiement</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -42,13 +69,42 @@
                         <td>{{ $client->nom_client }}</td>
                         <td>{{ $client->contact }}</td>
                         <td>{{ $client->sites_relais ?? 'Non renseigné' }}</td>
+
+                        {{-- Statut avec icône --}}
                         <td>
-                            @if ($client->statut)
-                                <span class="badge bg-danger">{{ strtoupper($client->statut) }}</span>
+                            @php
+                                $statut = strtolower($client->statut);
+                                $badgeClass = match($statut) {
+                                    'actif' => 'text-success',
+                                    'inactif' => 'text-warning',
+                                    'suspendu' => 'text-danger',
+                                    default => 'text-secondary',
+                                };
+                                $icon = match($statut) {
+                                    'actif' => 'fa-circle-check',
+                                    'inactif' => 'fa-circle-exclamation',
+                                    'suspendu' => 'fa-circle-xmark',
+                                    default => 'fa-question-circle',
+                                };
+                            @endphp
+                            <span class="{{ $badgeClass }}">
+                                <i class="fas {{ $icon }}"></i> {{ ucfirst($statut) }}
+                            </span>
+                        </td>
+
+                        {{-- Paiement avec icône --}}
+                        <td>
+                            @if (strtolower($client->statut) === 'payé')
+                                <span class="text-success">
+                                    <i class="fas fa-check-circle"></i> Payé
+                                </span>
                             @else
-                                <span class="text-muted">-</span>
+                                <span class="text-danger">
+                                    <i class="fas fa-times-circle"></i> Non payé
+                                </span>
                             @endif
                         </td>
+
                         <td>{{ $client->categorie ?? '-' }}</td>
                         <td>
                             {{ $client->date_reabonnement 
@@ -57,13 +113,6 @@
                             }}
                         </td>
                         <td>{{ number_format($client->montant, 0, ',', ' ') }} F</td>
-                        <td>
-                            @if ($client->a_paye)
-                                <span class="badge bg-success">Payé</span>
-                            @else
-                                <span class="badge bg-warning text-dark">Non payé</span>
-                            @endif
-                        </td>
                         <td>
                             <a href="{{ route('clients.edit', $client->id) }}" class="btn btn-primary btn-sm">Modifier</a>
                         </td>
@@ -74,6 +123,7 @@
     @endif
 </div>
 
+{{-- Modal succès --}}
 @if(session('success'))
     <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -93,6 +143,7 @@
     </div>
 @endif
 
+{{-- Script JS --}}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         // Recherche dynamique
@@ -113,13 +164,11 @@
             });
         }
 
-        // Modal succès
+        // Modal succès auto hide
         @if(session('success'))
             var successModal = new bootstrap.Modal(document.getElementById('successModal'));
             successModal.show();
-            setTimeout(function () {
-                successModal.hide();
-            }, 3000);
+            setTimeout(() => successModal.hide(), 3000);
         @endif
     });
 </script>
