@@ -30,8 +30,9 @@
                 <label for="statut" class="form-label">Statut</label>
                 <select name="statut" class="form-select">
                     <option value="">-- Sélectionner --</option>
-                    <option value="payé">Payé</option>
-                    <option value="non payé">Non payé</option>
+                    <option value="actif">Actif</option>
+                    <option value="inactif">Inactif</option>
+                    <option value="suspendu">Suspendu</option>
                 </select>
             </div>
 
@@ -53,9 +54,22 @@
             <div class="mb-3 form-check">
                 <input 
                     type="checkbox" 
+                    name="a_paye" 
+                    class="form-check-input" 
+                    id="a_paye" 
+                    value="1"
+                    {{ old('a_paye') ? 'checked' : '' }}
+                >
+                <label class="form-check-label" for="a_paye">Le client a payé ?</label>
+            </div>
+
+            <div class="mb-3 form-check">
+                <input 
+                    type="checkbox" 
                     name="actif" 
                     class="form-check-input" 
                     id="actif" 
+                    value="1"
                     {{ old('actif', true) ? 'checked' : '' }}
                 >
                 <label class="form-check-label" for="actif">Client actif ?</label>

@@ -28,6 +28,7 @@
                     <th>Catégorie</th>
                     <th>Date de réabonnement</th>
                     <th>Montant</th>
+                    <th>Paiement</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -56,6 +57,13 @@
                             }}
                         </td>
                         <td>{{ number_format($client->montant, 0, ',', ' ') }} F</td>
+                        <td>
+                            @if ($client->a_paye)
+                                <span class="badge bg-success">Payé</span>
+                            @else
+                                <span class="badge bg-warning text-dark">Non payé</span>
+                            @endif
+                        </td>
                         <td>
                             <a href="{{ route('clients.edit', $client->id) }}" class="btn btn-primary btn-sm">Modifier</a>
                         </td>
