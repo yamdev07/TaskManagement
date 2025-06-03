@@ -49,10 +49,9 @@ class ClientController extends Controller
         return view('clients.payes', compact('clients'));
     }
 
-
     public function nonPayes()
     {
-        $clients = Client::where('statut', '!=', 'payé')->get();
+        $clients = Client::where('a_paye', false)->get();
         return view('clients.nonpayes', compact('clients'));
     }
 
@@ -91,7 +90,11 @@ class ClientController extends Controller
             'date_reabonnement'  => 'required|date',
             'montant'            => 'required|numeric|min:0',
             'email'              => 'nullable|email|max:255',
+            'a_paye'             => 'nullable|boolean',
         ]);
+
+        // Assurez-vous que la case à cocher est bien gérée
+        $validatedData['a_paye'] = $request->has('a_paye');
 
         Client::create($validatedData);
 
@@ -114,7 +117,10 @@ class ClientController extends Controller
             'date_reabonnement'  => 'required|date',
             'montant'            => 'required|numeric|min:0',
             'email'              => 'nullable|email|max:255',
+            'a_paye'             => 'nullable|boolean',
         ]);
+
+        $validated['a_paye'] = $request->has('a_paye');
 
         $client->update($validated);
 

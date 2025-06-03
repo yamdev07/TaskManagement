@@ -7,16 +7,22 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/clients', [ClientController::class, 'index'])->name('clients.index');
-Route::get('/clients/reabonnement', [ClientController::class, 'aReabonnement'])->name('clients.reabonnement');
-Route::get('/clients/depasses', [ClientController::class, 'depasses'])->name('clients.depasses');
-Route::get('/clients/payes', [ClientController::class, 'clientsPayes'])->name('clients.payes');
-Route::get('/clients/nonpayes', [ClientController::class, 'nonPayes'])->name('clients.nonpayes');
-Route::get('/clients/notifier', [ClientController::class, 'envoyerNotifications'])->name('clients.notifier');
-Route::get('/clients/envoyer-notifications', [ClientController::class, 'envoyerNotifications'])->name('clients.envoyerNotifications');
+// Groupe des routes pour les clients
+Route::prefix('clients')->name('clients.')->group(function () {
+    Route::get('/', [ClientController::class, 'index'])->name('index');
+    Route::get('/create', [ClientController::class, 'create'])->name('create');
+    Route::post('/', [ClientController::class, 'store'])->name('store');
+    Route::get('/{client}/edit', [ClientController::class, 'edit'])->name('edit');
+    Route::put('/{client}', [ClientController::class, 'update'])->name('update');
 
-Route::get('/clients', [ClientController::class, 'index'])->name('clients.index');
-Route::get('/clients/create', [ClientController::class, 'create'])->name('clients.create');
-Route::post('/clients', [ClientController::class, 'store'])->name('clients.store');
-Route::get('/clients/{client}/edit', [ClientController::class, 'edit'])->name('clients.edit');
-Route::put('/clients/{client}', [ClientController::class, 'update'])->name('clients.update');
+    // Filtres et vues spécifiques
+    Route::get('/reabonnement', [ClientController::class, 'aReabonnement'])->name('reabonnement');
+    Route::get('/depasses', [ClientController::class, 'depasses'])->name('depasses');
+    Route::get('/payes', [ClientController::class, 'clientsPayes'])->name('payes');
+    Route::get('/nonpayes', [ClientController::class, 'nonPayes'])->name('nonpayes');
+
+    // Notifications
+    Route::get('/envoyer-notifications', [ClientController::class, 'envoyerNotifications'])->name('envoyerNotifications');
+    // Optionnel : supprime si non nécessaire
+    Route::get('/notifier', [ClientController::class, 'envoyerNotifications'])->name('notifier');
+});
