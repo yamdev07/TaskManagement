@@ -30,6 +30,21 @@
                     <p class="card-text fs-4">{{ $nonPayes }} / {{ $total }}</p>
                 </div>
             </div>
+
+            <div class="card text-white bg-primary" style="min-width: 150px;">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Clients Actifs</h5>
+                    <p class="card-text fs-4">{{ $actifs }}</p>
+                </div>
+            </div>
+
+            <div class="card text-white bg-secondary" style="min-width: 150px;">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Clients Suspendus</h5>
+                    <p class="card-text fs-4">{{ $suspendus }}</p>
+                </div>
+            </div>
+
         </div>
     @endif
 
