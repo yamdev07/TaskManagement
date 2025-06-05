@@ -25,6 +25,7 @@
                     <th>Contact</th>
                     <th>Site relais</th>
                     <th>Statut</th>
+                    <th>Paiement</th> {{-- Colonne ajoutée --}}
                     <th>Catégorie</th>
                     <th>Date de réabonnement</th>
                     <th>Montant</th>
@@ -44,6 +45,11 @@
                             @else
                                 <span class="text-muted">-</span>
                             @endif
+                        </td>
+                        <td> {{-- Paiement --}}
+                            <span class="text-success">
+                                <i class="fas fa-check-circle"></i> Payé
+                            </span>
                         </td>
                         <td>{{ $client->categorie ?? '-' }}</td>
                         <td>

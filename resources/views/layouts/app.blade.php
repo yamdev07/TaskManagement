@@ -1,72 +1,44 @@
 <!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <title>@yield('title') - AnyxTech</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <style>
-        body {
-            background-color: #f9f9f9;
-        }
-        .navbar {
-            background-color: #1e4d9f;
-        }
-        .navbar a, .navbar .navbar-brand {
-            color: #fff !important;
-        }
-        .navbar a:hover {
-            color: #d4f0ff !important;
-        }
-        .navbar-brand img {
-            height: 40px;
-        }
-        .navbar-brand span {
-            margin-left: 8px;
-            font-weight: bold;
-            color: #ffffff;
-        }
-        .nav-link.active {
-            font-weight: bold;
-            text-decoration: underline;
-        }
-    </style>
-</head>
-<body>
-    <!-- Barre de navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container">
-            <a class="navbar-brand d-flex align-items-center" href="{{ route('clients.index') }}">
-                <img src="{{ asset('images/logo-removebg-preview.png') }}" alt="Logo AnyxTech">
-            </a>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="csrf-token" content="{{ csrf_token() }}">
 
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+        <title>@yield('title') - AnyxTech</title>
 
-            <div class="collapse navbar-collapse justify-content-center" id="navbarNav">
-                <ul class="navbar-nav gap-3">
-                    <li class="nav-item"><a href="{{ route('clients.index') }}" class="nav-link {{ request()->routeIs('clients.index') ? 'active' : '' }}">Clients</a></li>
-                    <li class="nav-item"><a href="{{ route('clients.payes') }}" class="nav-link {{ request()->routeIs('clients.payes') ? 'active' : '' }}">Payés</a></li>
-                    <li class="nav-item"><a href="{{ route('clients.nonpayes') }}" class="nav-link {{ request()->routeIs('clients.nonpayes') ? 'active' : '' }}">Non payés</a></li>
-                    <li class="nav-item"><a href="{{ route('clients.reabonnement') }}" class="nav-link {{ request()->routeIs('clients.reabonnement') ? 'active' : '' }}">Réabonnement</a></li>
-                    <li class="nav-item"><a href="{{ route('clients.depasses') }}" class="nav-link {{ request()->routeIs('clients.depasses') ? 'active' : '' }}">Dépassés</a></li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ route('clients.actifs') }}">Clients Actifs</a>
-                    </li>
+        <!-- Fonts -->
+        <link rel="preconnect" href="https://fonts.bunny.net">
+        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+        <!-- Bootstrap CSS -->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
-                </ul>
-            </div>
+        <!-- Scripts -->
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+    </head>
+    <body class="font-sans antialiased">
+        <div class="min-h-screen bg-gray-100">
+            @include('layouts.navigation')
+
+            <!-- Page Heading -->
+            @isset($header)
+                <header class="bg-white shadow">
+                    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                        {{ $header }}
+                    </div>
+                </header>
+            @endisset
+
+            <!-- Page Content -->
+            <main>
+                @yield('content')       
+            </main>
+            
+            <x-footer />
+
         </div>
-    </nav>
+        <!-- Bootstrap JS -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Contenu principal -->
-    <div class="container mt-4">
-        @yield('content')
-    </div>
-    <x-footer />
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
+    </body>
 </html>

@@ -17,21 +17,28 @@ class ClientController extends Controller
             $search = strtolower($request->input('search'));
             $query->where(function ($q) use ($search) {
                 $q->whereRaw('LOWER(nom_client) LIKE ?', ["%{$search}%"])
-                  ->orWhereRaw('LOWER(sites_relais) LIKE ?', ["%{$search}%"]);
+                ->orWhereRaw('LOWER(sites_relais) LIKE ?', ["%{$search}%"]);
             });
         }
 
         $clients = $query->orderBy('id')->get();
 
-        return view('clients.index', compact('clients'));
+        // Statistiques globales
+        $actifs = Client::where('statut', 'actif')->count();
+        $suspendus = Client::where('statut', 'suspendu')->count();
+
+        return view('clients.index', compact('clients', 'actifs', 'suspendus'));
     }
+
+
+
 
     public function aReabonnement()
     {
         $aujourdhui = Carbon::today();
-        $dans7jours = Carbon::today()->addDays(7);
+        $dans7jours = Carbon::today()->addDays(3);
 
-        $clients = Client::whereBetween('date_reabonnement', [$aujourdhui, $dans7jours])->get();
+        $clients = Client::whereBetween('date_reabonnement', [$aujourdhui, $dans3jours])->get();
 
         return view('clients.reabonnement', compact('clients'));
     }
@@ -137,8 +144,25 @@ class ClientController extends Controller
 
     public function clientsActifs()
     {
-        $clientsActifs = Client::where('statut', 'actif')->get();
-        return view('clients.actifs', compact('clientsActifs'));    
+        $clients = Client::where('statut', 'actif')->get(); // ✅ renommé en $clients
+        return view('clients.actifs', compact('clients'));  // ✅ envoie bien $clients
+    }
+
+    public function clientsSuspendus(Request $request)
+    {
+        $query = Client::where('statut', 'suspendu');
+
+        if ($request->filled('search')) {
+            $search = strtolower($request->input('search'));
+            $query->where(function ($q) use ($search) {
+                $q->whereRaw('LOWER(nom_client) LIKE ?', ["%{$search}%"])
+                ->orWhereRaw('LOWER(sites_relais) LIKE ?', ["%{$search}%"]);
+            });
+        }
+
+        $clients = $query->orderBy('id')->get();
+
+        return view('clients.suspendus', compact('clients'));
     }
 
 }
