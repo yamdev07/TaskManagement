@@ -26,12 +26,19 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/{client}/edit', [ClientController::class, 'edit'])->name('edit');
         Route::put('/{client}', [ClientController::class, 'update'])->name('update');
 
+        Route::patch('/{client}/reconnecter', [ClientController::class, 'reconnecter'])->name('reconnecter');
+        Route::post('/{client}/deconnecter', [ClientController::class, 'deconnecter'])->name('deconnecter');
+        Route::get('/ajax/list', [ClientController::class, 'ajaxList'])->name('ajaxList');
+        Route::delete('/{client}', [ClientController::class, 'destroy'])->name('destroy');
+        Route::post('/{client}/relancer', [ClientController::class, 'relancerViaWhatsApp'])->name('relancer');
+
         Route::get('/reabonnement', [ClientController::class, 'aReabonnement'])->name('reabonnement');
         Route::get('/depasses', [ClientController::class, 'depasses'])->name('depasses');
         Route::get('/payes', [ClientController::class, 'clientsPayes'])->name('payes');
         Route::get('/nonpayes', [ClientController::class, 'nonPayes'])->name('nonpayes');
         Route::get('/actifs', [ClientController::class, 'clientsActifs'])->name('actifs');
         Route::get('/suspendus', [ClientController::class, 'clientsSuspendus'])->name('suspendus');
+        Route::get('/dans3jours', [ClientController::class, 'dans3Jours'])->name('dans3jours');
 
         Route::get('/envoyer-notifications', [ClientController::class, 'envoyerNotifications'])->name('envoyerNotifications');
         Route::get('/notifier', [ClientController::class, 'envoyerNotifications'])->name('notifier');

@@ -17,6 +17,11 @@
     @if ($clients->isEmpty())
         <div class="alert alert-info">Aucun client payé trouvé.</div>
     @else
+
+        <div class="alert alert-warning text-center mx-auto" style="max-width: 350px;">
+            Clients Actifs Non Payés : <strong>{{ $total }}</strong>
+        </div>
+        
         <table class="table table-bordered table-striped">
             <thead class="table-dark">
                 <tr>
@@ -25,7 +30,7 @@
                     <th>Contact</th>
                     <th>Site relais</th>
                     <th>Statut</th>
-                    <th>Paiement</th> {{-- Colonne ajoutée --}}
+                    <th>Paiement</th>
                     <th>Catégorie</th>
                     <th>Date de réabonnement</th>
                     <th>Montant</th>
@@ -34,23 +39,30 @@
             </thead>
             <tbody>
                 @foreach ($clients as $client)
-                    <tr data-nom="{{ strtolower($client->nom_client) }}" data-siterelais="{{ strtolower($client->sites_relais) }}">
+                    <tr data-nom="{{ strtolower($client->nom_client) }}" data-siterelais="{{ strtolower($client->sites_relais ?? '') }}">
                         <td>{{ $client->id }}</td>
                         <td>{{ $client->nom_client }}</td>
                         <td>{{ $client->contact }}</td>
                         <td>{{ $client->sites_relais ?? '-' }}</td>
                         <td>
                             @if ($client->statut)
-                                <span class="badge bg-danger">{{ strtoupper($client->statut) }}</span>
+                                <span class="badge bg-success">{{ strtoupper($client->statut) }}</span>
                             @else
                                 <span class="text-muted">-</span>
                             @endif
                         </td>
-                        <td> {{-- Paiement --}}
-                            <span class="text-success">
-                                <i class="fas fa-check-circle"></i> Payé
-                            </span>
+                        <td>
+                            @if($client->a_paye)
+                                <span class="text-success">
+                                    <i class="fas fa-check-circle"></i> Payé
+                                </span>
+                            @else
+                                <span class="text-danger">
+                                    <i class="fas fa-times-circle"></i> Non payé
+                                </span>
+                            @endif
                         </td>
+
                         <td>{{ $client->categorie ?? '-' }}</td>
                         <td>
                             {{ $client->date_reabonnement 
@@ -59,13 +71,24 @@
                             }}
                         </td>
                         <td>{{ number_format($client->montant, 0, ',', ' ') }} F</td>
+
+                        <!-- Nouvelle colonne Actions -->
                         <td>
-                            <a href="{{ route('clients.edit', $client->id) }}" class="btn btn-primary btn-sm">Modifier</a>
+                            @if($client->a_paye)
+                                <form method="POST" action="{{ route('clients.deconnecter', $client->id) }}" onsubmit="return confirm('Confirmer la déconnexion (non paiement) de ce client ?');">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm btn-danger">Déconnecter</button>
+                                </form>
+                            @else
+                                <span class="text-muted">-</span>
+                            @endif
                         </td>
                     </tr>
                 @endforeach
             </tbody>
+
         </table>
+
     @endif
 </div>
 
@@ -89,31 +112,54 @@
 @endif
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const searchInput = document.getElementById('searchInput');
-        if (searchInput) {
-            const rows = document.querySelectorAll('tbody tr');
-            searchInput.addEventListener('input', function () {
-                const value = this.value.toLowerCase();
-                rows.forEach(row => {
-                    const nom = row.dataset.nom;
-                    const site = row.dataset.siterelais;
-                    if (nom.includes(value) || site.includes(value)) {
-                        row.style.display = '';
-                    } else {
-                        row.style.display = 'none';
-                    }
-                });
-            });
-        }
+document.addEventListener('DOMContentLoaded', function () {
+    const searchInput = document.getElementById('searchInput');
+    const rows = document.querySelectorAll('tbody tr');
+    const visibleCount = document.getElementById('visibleCount');
+    const visibleClientsList = document.getElementById('visibleClientsList');
 
-        @if(session('success'))
-            var successModal = new bootstrap.Modal(document.getElementById('successModal'));
-            successModal.show();
-            setTimeout(function () {
-                successModal.hide();
-            }, 3000);
-        @endif
-    });
+    function updateVisibleClients() {
+        let count = 0;
+        visibleClientsList.innerHTML = '';
+
+        rows.forEach(row => {
+            if (row.style.display !== 'none') {
+                count++;
+                const clientName = row.children[1].textContent;
+                const li = document.createElement('li');
+                li.textContent = clientName;
+                visibleClientsList.appendChild(li);
+            }
+        });
+
+        visibleCount.textContent = count;
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener('input', function () {
+            const value = this.value.toLowerCase();
+
+            rows.forEach(row => {
+                const nom = row.dataset.nom;
+                const site = row.dataset.siterelais;
+                if (nom.includes(value) || site.includes(value)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            updateVisibleClients();
+        });
+    }
+
+    updateVisibleClients();
+
+    @if(session('success'))
+        var successModal = new bootstrap.Modal(document.getElementById('successModal'));
+        successModal.show();
+        setTimeout(() => successModal.hide(), 3000);
+    @endif
+});
 </script>
 @endsection
