@@ -14,6 +14,7 @@ class Client extends Model
     'categorie',
     'date_reabonnement',
     'montant',
+    'a_paye', 
 ];
 protected $casts = [
     'a_paye' => 'boolean',

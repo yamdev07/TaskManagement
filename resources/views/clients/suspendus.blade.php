@@ -53,7 +53,20 @@
                             @endif
                         </td>
                         <td>
-                            <a href="{{ route('clients.edit', $client->id) }}" class="btn btn-primary btn-sm">Modifier</a>
+                            @php
+                                $numero = preg_replace('/[^0-9]/', '', $client->contact); 
+                                $date = $client->date_reabonnement 
+                                    ? \Carbon\Carbon::parse($client->date_reabonnement)->format('d/m/Y') 
+                                    : 'bientôt';
+                                $message = urlencode("Bonjour {$client->nom_client}, votre réabonnement  est arrivé à échéance le {$date}. Merci de penser à renouveler pour éviter toute interruption de service. - AnyxTech");
+                            @endphp
+                            <a 
+                                href="https://wa.me/229{{ $numero }}?text={{ $message }}" 
+                                target="_blank" 
+                                class="btn btn-success btn-sm"
+                            >
+                                <i class="fab fa-whatsapp"></i> Relancer
+                            </a>
                         </td>
                     </tr>
                 @endforeach
