@@ -6,6 +6,8 @@ use App\Models\Client;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Mail;
+use App\Services\InfobipService;
+use Illuminate\Support\Facades\Http;
 
 class ClientController extends Controller
 {
@@ -161,13 +163,13 @@ class ClientController extends Controller
             'sites_relais'      => 'nullable|string|max:255',
             'statut'            => 'nullable|string|in:actif,inactif,suspendu',
             'categorie'         => 'nullable|string|max:100',
-            'date_reabonnement' => 'required|date',
+            'jour_reabonnement' => 'required|integer|min:1|max:31', // nouveau champ
             'montant'           => 'required|numeric|min:0',
-            // On utilise 0 ou 1 pour a_paye en base (entier), donc validation adaptée
             'a_paye'            => 'nullable|boolean',
         ]);
 
-        // Par défaut non payé si non renseigné
+        // Calcul automatique de la date de réabonnement à partir du jour
+        $validatedData['date_reabonnement'] = $this->calculerDateReabonnement($validatedData['jour_reabonnement']);
         $validatedData['a_paye'] = $request->input('a_paye', 0);
 
         Client::create($validatedData);
@@ -184,36 +186,34 @@ class ClientController extends Controller
     // Mise à jour client
    public function update(Request $request, $id)
     {
-        // Validation des données
         $request->validate([
-            'nom_client' => 'required|string|max:255',
-            'contact' => 'required|string|max:255',
-            'sites_relais' => 'nullable|string|max:255',
-            'statut' => 'required|in:actif,inactif,suspendu',
-            'categorie' => 'nullable|string|max:255',
-            'date_reabonnement' => 'required|date',
-            'montant' => 'required|numeric',
-            'a_paye' => 'required|boolean',
+            'nom_client'        => 'required|string|max:255',
+            'contact'           => 'required|string|max:255',
+            'sites_relais'      => 'nullable|string|max:255',
+            'statut'            => 'required|in:actif,inactif,suspendu',
+            'categorie'         => 'nullable|string|max:255',
+            'jour_reabonnement' => 'required|integer|min:1|max:31',
+            'montant'           => 'required|numeric',
+            'a_paye'            => 'required|boolean',
         ]);
 
-        // Récupération du client
         $client = Client::findOrFail($id);
 
-        // Mise à jour des données
-        $client->nom_client = $request->nom_client;
-        $client->contact = $request->contact;
-        $client->sites_relais = $request->sites_relais;
-        $client->statut = $request->statut;
-        $client->categorie = $request->categorie;
-        $client->date_reabonnement = $request->date_reabonnement;
-        $client->montant = $request->montant;
-        $client->a_paye = $request->a_paye;
+        $client->nom_client         = $request->nom_client;
+        $client->contact            = $request->contact;
+        $client->sites_relais       = $request->sites_relais;
+        $client->statut             = $request->statut;
+        $client->categorie          = $request->categorie;
+        $client->jour_reabonnement  = $request->jour_reabonnement;
+        $client->date_reabonnement  = $this->calculerDateReabonnement($request->jour_reabonnement);
+        $client->montant            = $request->montant;
+        $client->a_paye             = $request->a_paye;
 
         $client->save();
 
-        // Redirection vers la liste avec message de succès
         return redirect()->route('clients.index')->with('success', 'Client modifié avec succès.');
     }
+
 
 
 
@@ -242,31 +242,100 @@ class ClientController extends Controller
         return view('clients.suspendus', compact('clients'));
     }
     
-    public function relancerViaWhatsApp(Client $client)
+    public function relancerViaWhatsApp(Client $client, InfobipService $infobip)
     {
-        // Infos de config à placer dans .env
-        $token = config('services.whatsapp.token');
-        $phoneId = config('services.whatsapp.phone_id');
+        // Numéro internationalisé (229xxxxxxxx)
+        $numero = preg_replace('/[^0-9]/', '', $client->contact);
+        if (strlen($numero) === 8) {
+            $numero = '229' . $numero;
+        }
 
-        // Numéro formaté pour l'envoi (ex : 229XXXXXXXX)
-        $numero = preg_replace('/\D/', '', $client->contact); // Nettoyage si besoin
+        // Infobip requiert le format E.164 avec préfixe WhatsApp
+        $numeroWhatsapp = "+$numero"; // Pas besoin d'ajouter 'whatsapp:' devant avec Infobip
 
-        $message = "Bonjour {$client->nom_client}, votre abonnement expire bientôt. Veuillez renouveler via ce lien : https://anyxtech.com/reabonnement. Merci.";
+        $nomClient = $client->nom_client;
 
-        $response = Http::withToken($token)->post("https://graph.facebook.com/v19.0/{$phoneId}/messages", [
-            'messaging_product' => 'whatsapp',
-            'to' => $numero,
-            'type' => 'text',
-            'text' => [
-                'body' => $message
-            ]
-        ]);
+        $success = $infobip->sendWhatsAppTemplate($numeroWhatsapp, $nomClient);
 
-        if ($response->successful()) {
-            return back()->with('success', 'Message WhatsApp envoyé avec succès.');
+        if ($success) {
+            return back()->with('success', "Message WhatsApp envoyé à {$nomClient} via Infobip.");
         } else {
-            return back()->with('error', 'Échec de l’envoi WhatsApp : ' . $response->body());
+            return back()->with('error', "Échec de l’envoi WhatsApp via Infobip.");
         }
     }
-    
+
+
+    public function relancer($id, InfobipService $infobip)
+    {
+        $client = Client::findOrFail($id);
+
+        // Nettoyer le numéro : ici on part du principe qu'il faut ajouter l'indicatif Bénin '229'
+        $numero = preg_replace('/[^0-9]/', '', $client->contact);
+        if (strlen($numero) === 8) {
+            $numero = '229' . $numero;
+        }
+
+        $date = $client->date_reabonnement 
+            ? \Carbon\Carbon::parse($client->date_reabonnement)->format('d/m/Y') 
+            : 'bientôt';
+
+        $message = "Bonjour {$client->nom_client}, votre réabonnement arrive à échéance le {$date}. Merci de penser à renouveler votre abonnement pour éviter toute interruption. - AnyxTech";
+
+        $success = $infobip->sendSms($numero, $message);
+
+        if ($success) {
+            return redirect()->back()->with('success', "Message envoyé avec succès à {$client->nom_client}.");
+        } else {
+            return redirect()->back()->with('error', "Erreur lors de l'envoi du message.");
+        }
+    }
+
+   private function calculerDateReabonnement($jour)
+    {
+        $mois = now()->month;
+        $annee = now()->year;
+
+        try {
+            $date = Carbon::create($annee, $mois, $jour);
+
+            // Si la date est déjà passée ce mois-ci, passer au mois suivant
+            if ($date->isPast()) {
+                $date = $date->addMonth();
+            }
+
+            return $date->toDateString(); // Format Y-m-d
+        } catch (\Exception $e) {
+            return null; // Pour gérer le cas des jours invalides (31 février, etc.)
+        }
+    }
+
+
+    public function mettreAJourDatesReabonnement()
+    {
+        $clients = Client::whereNotNull('jour_reabonnement')->get();
+
+        foreach ($clients as $client) {
+            $jour = $client->jour_reabonnement;
+
+            // Crée une date avec le jour enregistré + mois et année actuels
+            try {
+                $nouvelleDate = Carbon::create(now()->year, now()->month, $jour);
+
+                // Si la nouvelle date est dans le passé, on passe au mois suivant
+                if ($nouvelleDate->isPast()) {
+                    $nouvelleDate->addMonth();
+                }
+
+                $client->date_reabonnement = $nouvelleDate->toDateString();
+                $client->save();
+            } catch (\Exception $e) {
+                // Évite de planter si le jour est invalide pour ce mois (ex: 31 février)
+                continue;
+            }
+        }
+
+        return response()->json(['message' => 'Dates de réabonnement mises à jour avec succès.']);
+    }
+
+
 }

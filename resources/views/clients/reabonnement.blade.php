@@ -6,13 +6,20 @@
 <div class="container mt-5">
     <div class="mb-4 text-center">
         <h1 class="display-5 fw-bold">Réabonnements à venir</h1>
+
+        {{-- Message d'erreur --}}
+        @if(session('error'))
+            <div class="alert alert-danger mt-3">
+                {{ session('error') }}
+            </div>
+        @endif
     </div>
 
     {{-- Cartes de statistiques --}}
     @if ($clients->count())
         @php
             $total = $clients->count();
-            $payes = $clients->where('statut', 'payé')->count();
+            $payes = $clients->where('a_paye', 1)->count();
             $nonPayes = $total - $payes;
         @endphp
 
@@ -71,7 +78,7 @@
 
                         {{-- Paiement --}}
                         <td>
-                            @if (strtolower($client->statut) === 'payé')
+                            @if ($client->a_paye)
                                 <span class="text-success">
                                     <i class="fas fa-check-circle"></i> Payé
                                 </span>
@@ -96,15 +103,23 @@
                                 $date = $client->date_reabonnement 
                                     ? \Carbon\Carbon::parse($client->date_reabonnement)->format('d/m/Y') 
                                     : 'bientôt';
-                                $message = urlencode("Bonjour {$client->nom_client}, votre réabonnement arrive à échéance le {$date}. Merci de penser à renouveler pour éviter toute interruption de service. - AnyxTech");
+                                $message = "Bonjour {$client->nom_client}, votre réabonnement arrive à échéance le {$date}. Merci de penser à renouveler pour éviter toute interruption de service. - AnyxTech";
                             @endphp
-                            <a 
-                                href="https://wa.me/229{{ $numero }}?text={{ $message }}" 
-                                target="_blank" 
-                                class="btn btn-success btn-sm"
-                            >
-                                <i class="fab fa-whatsapp"></i> Relancer
+
+                            {{-- Bouton WhatsApp via Infobip --}}
+                            <a href="{{ route('clients.relancer', $client->id) }}" 
+                               class="btn btn-success btn-sm mb-1" 
+                               title="{{ $message }}">
+                                <i class="fab fa-whatsapp"></i> WhatsApp
                             </a>
+
+                            {{-- Bouton SMS/Email via InfobipService --}}
+                            <form action="{{ route('clients.relancer', $client->id) }}" method="POST" class="d-inline">
+                                @csrf
+                                <button type="submit" class="btn btn-primary btn-sm" title="{{ $message }}">
+                                    <i class="fas fa-paper-plane"></i> SMS
+                                </button>
+                            </form>
                         </td>
                     </tr>
                 @endforeach
