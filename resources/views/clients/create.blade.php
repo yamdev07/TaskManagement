@@ -13,42 +13,43 @@
 
             <div class="mb-3">
                 <label for="nom_client" class="form-label">Nom du client</label>
-                <input type="text" name="nom_client" class="form-control" required>
+                <input type="text" name="nom_client" class="form-control" value="{{ old('nom_client') }}" required>
             </div>
 
             <div class="mb-3">
                 <label for="contact" class="form-label">Contact</label>
-                <input type="text" name="contact" class="form-control" required>
+                <input type="text" name="contact" class="form-control" value="{{ old('contact') }}" required>
             </div>
 
             <div class="mb-3">
                 <label for="sites_relais" class="form-label">Site relais</label>
-                <input type="text" name="sites_relais" class="form-control">
+                <input type="text" name="sites_relais" class="form-control" value="{{ old('sites_relais') }}">
             </div>
 
             <div class="mb-3">
                 <label for="statut" class="form-label">Statut</label>
                 <select name="statut" class="form-select">
                     <option value="">-- Sélectionner --</option>
-                    <option value="actif">Actif</option>
-                    <option value="inactif">Inactif</option>
-                    <option value="suspendu">Suspendu</option>
+                    <option value="actif" {{ old('statut') === 'actif' ? 'selected' : '' }}>Actif</option>
+                    <option value="inactif" {{ old('statut') === 'inactif' ? 'selected' : '' }}>Inactif</option>
+                    <option value="suspendu" {{ old('statut') === 'suspendu' ? 'selected' : '' }}>Suspendu</option>
                 </select>
             </div>
 
             <div class="mb-3">
                 <label for="categorie" class="form-label">Catégorie</label>
-                <input type="text" name="categorie" class="form-control">
+                <input type="text" name="categorie" class="form-control" value="{{ old('categorie') }}">
             </div>
 
             <div class="mb-3">
-                <label for="date_reabonnement" class="form-label">Date de réabonnement</label>
-                <input type="date" name="date_reabonnement" class="form-control" required>
+                <label for="jour_reabonnement" class="form-label">Jour de réabonnement (1-31)</label>
+                <input type="number" name="jour_reabonnement" class="form-control" min="1" max="31" value="{{ old('jour_reabonnement') }}" required>
+                <small class="form-text text-muted">Exemple : 5 => tous les 5 du mois</small>
             </div>
 
             <div class="mb-3">
                 <label for="montant" class="form-label">Montant</label>
-                <input type="number" name="montant" class="form-control" min="0" required>
+                <input type="number" name="montant" class="form-control" min="0" value="{{ old('montant') }}" required>
             </div>
 
             <div class="mb-3 form-check">
@@ -61,18 +62,6 @@
                     {{ old('a_paye') ? 'checked' : '' }}
                 >
                 <label class="form-check-label" for="a_paye">Le client a payé ?</label>
-            </div>
-
-            <div class="mb-3 form-check">
-                <input 
-                    type="checkbox" 
-                    name="actif" 
-                    class="form-check-input" 
-                    id="actif" 
-                    value="1"
-                    {{ old('actif', true) ? 'checked' : '' }}
-                >
-                <label class="form-check-label" for="actif">Client actif ?</label>
             </div>
 
             <div class="d-flex justify-content-between">
