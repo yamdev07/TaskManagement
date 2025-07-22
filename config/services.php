@@ -40,11 +40,11 @@ return [
         'phone_id' => env('WHATSAPP_PHONE_ID'),
     ],
 
-    'infobip' => [
-    'api_key' => env('INFOBIP_API_KEY'),
-    'base_url' => env('INFOBIP_BASE_URL'),
-    'sender' => env('INFOBIP_SENDER'),
-    'template_name' => env('INFOBIP_TEMPLATE_NAME'),
+    'twilio' => [
+        'sid' => env('TWILIO_SID'),
+        'token' => env('TWILIO_TOKEN'),
+        'from' => env('TWILIO_FROM'),
+        'whatsapp_from' => env('TWILIO_WHATSAPP_FROM'),
     ],
 
 
