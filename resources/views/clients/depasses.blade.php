@@ -222,14 +222,6 @@
                                             <i class="fab fa-whatsapp"></i>
                                             <span class="d-none d-md-inline">Relancer</span>
                                         </a>
-
-                                        <a href="{{ route('clients.edit', $client->id) }}" 
-                                           class="btn btn-primary btn-sm shadow-sm"
-                                           data-bs-toggle="tooltip"
-                                           data-bs-title="Modifier le client">
-                                            <i class="fas fa-edit"></i>
-                                            <span class="d-none d-md-inline">Modifier</span>
-                                        </a>
                                     </div>
                                 </td>
                             </tr>

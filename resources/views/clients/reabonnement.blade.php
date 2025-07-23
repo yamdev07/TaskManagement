@@ -204,26 +204,33 @@
                                 <td>{{ number_format($client->montant, 0, ',', ' ') }} F</td>
                                 <td class="pe-4">
                                     @php
-                                        $numero = preg_replace('/[^0-9]/', '', $client->contact);
-                                        if (strlen($numero) === 8) {
-                                            $numero = '229' . $numero;
+                                        // Nettoyer le numéro pour le format WhatsApp (sans le + initial)
+                                        $numero_brut = preg_replace('/[^0-9]/', '', $client->contact);
+                                        if (strlen($numero_brut) === 8) { // Si c'est un numéro à 8 chiffres du Bénin
+                                            $numero_brut = '229' . $numero_brut; // Ajouter l'indicatif du Bénin
                                         }
                                         $date = $client->date_reabonnement 
                                             ? \Carbon\Carbon::parse($client->date_reabonnement)->format('d/m/Y') 
                                             : 'bientôt';
-                                        $message = "Bonjour {$client->nom_client}, votre réabonnement arrive à échéance le {$date}. Merci de penser à renouveler pour éviter toute interruption de service. - AnyxTech";
+                                        $message_whatsapp = "Bonjour {$client->nom_client}, votre réabonnement AnyxTech arrive à échéance le {$date}. Merci de penser à renouveler pour éviter toute interruption de service.";
+                                        
+                                        // Encode le message pour l'URL
+                                        $encoded_message = urlencode($message_whatsapp);
+                                        
+                                        // Construit le lien WhatsApp
+                                        $whatsapp_link = "https://wa.me/{$numero_brut}?text={$encoded_message}";
                                     @endphp
 
-                                    <form action="{{ route('clients.relancer', $client->id) }}" method="POST" class="d-inline">
-                                        @csrf
-                                        <input type="hidden" name="message" value="{{ $message }}">
-                                        <button type="submit" class="btn btn-success btn-sm whatsapp-btn shadow-sm"
-                                                data-bs-toggle="tooltip"
-                                                data-bs-title="{{ $message }}">
-                                            <i class="fab fa-whatsapp"></i>
-                                            <span class="d-none d-md-inline">Relancer</span>
-                                        </button>
-                                    </form>
+                                    {{-- NOUVEAU LIEN WHATSAPP SIMPLIFIÉ --}}
+                                    <a href="{{ $whatsapp_link }}" 
+                                       target="_blank" {{-- Ouvre dans un nouvel onglet --}}
+                                       class="btn btn-success btn-sm whatsapp-btn shadow-sm"
+                                       data-bs-toggle="tooltip"
+                                       data-bs-title="{{ $message_whatsapp }}">
+                                        <i class="fab fa-whatsapp"></i>
+                                        <span class="d-none d-md-inline">Relancer</span>
+                                    </a>
+                                    {{-- FIN DU NOUVEAU LIEN WHATSAPP SIMPLIFIÉ --}}
                                 </td>
                             </tr>
                             @endforeach
