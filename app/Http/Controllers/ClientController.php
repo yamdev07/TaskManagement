@@ -14,12 +14,29 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class ClientController extends Controller
 {
-
     protected $twilioService;
-    /**
-     * Affiche la liste paginée des clients avec les statistiques globales.
-     * Prend en charge la recherche.
-     */
+
+    // --- Méthode privée pour gérer paiement et réabonnement ---
+    private function payerEtReabonner(Client $client)
+    {
+        $client->a_paye = 1;
+
+        if ($client->jour_reabonnement) {
+            $jour = min($client->jour_reabonnement, Carbon::now()->endOfMonth()->day);
+
+            $nouvelleDate = Carbon::create(now()->year, now()->month, $jour);
+
+            if ($nouvelleDate->isPast()) {
+                $nouvelleDate->addMonth();
+            }
+
+            $client->date_reabonnement = $nouvelleDate->toDateString();
+        }
+
+        $client->save();
+    }
+
+    // --- Liste de tous les clients ---
     public function index(Request $request)
     {
         $query = Client::query();
@@ -43,35 +60,10 @@ class ClientController extends Controller
 
         return view('clients.index', compact('clients', 'totalClientsCount', 'payes', 'nonPayes', 'actifs', 'suspendus'));
     }
+
     public function clientsPayes(Request $request)
     {
-        $query = Client::where('statut', 'actif')
-                    ->where('a_paye', 1);
-
-        if ($request->filled('search')) {
-            $search = strtolower($request->input('search'));
-            $query->where(function ($q) use ($search) {
-                $q->whereRaw('LOWER(nom_client) LIKE ?', ["%{$search}%"])
-                ->orWhereRaw('LOWER(contact) LIKE ?', ["%{$search}%"])
-                ->orWhereRaw('LOWER(sites_relais) LIKE ?', ["%{$search}%"]);
-            });
-        }
-
-        $clients = $query->orderBy('id')->paginate(10);
-
-        $totalClientsCount = Client::count();
-        $actifs = Client::where('statut', 'actif')->count();
-        $suspendus = Client::where('statut', 'suspendu')->count();
-        $totalPayes = Client::where('statut', 'actif')->where('a_paye', 1)->count(); // nombre de clients actifs et payés
-        $nonPayes = Client::where('a_paye', 0)->count();
-
-        return view('clients.payes', compact('clients', 'actifs', 'suspendus', 'totalClientsCount', 'totalPayes', 'nonPayes'));
-    }
-
-    public function nonPayes(Request $request)
-    {
-        $query = Client::where('statut', 'actif')
-                       ->where('a_paye', 0);
+        $query = Client::where('statut', 'actif')->where('a_paye', 1);
 
         if ($request->filled('search')) {
             $search = strtolower($request->input('search'));
@@ -81,7 +73,31 @@ class ClientController extends Controller
                   ->orWhereRaw('LOWER(sites_relais) LIKE ?', ["%{$search}%"]);
             });
         }
-        
+
+        $clients = $query->orderBy('id')->paginate(10);
+
+        $totalClientsCount = Client::count();
+        $actifs = Client::where('statut', 'actif')->count();
+        $suspendus = Client::where('statut', 'suspendu')->count();
+        $totalPayes = Client::where('statut', 'actif')->where('a_paye', 1)->count();
+        $nonPayes = Client::where('a_paye', 0)->count();
+
+        return view('clients.payes', compact('clients', 'actifs', 'suspendus', 'totalClientsCount', 'totalPayes', 'nonPayes'));
+    }
+
+    public function nonPayes(Request $request)
+    {
+        $query = Client::where('statut', 'actif')->where('a_paye', 0);
+
+        if ($request->filled('search')) {
+            $search = strtolower($request->input('search'));
+            $query->where(function ($q) use ($search) {
+                $q->whereRaw('LOWER(nom_client) LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw('LOWER(contact) LIKE ?', ["%{$search}%"])
+                  ->orWhereRaw('LOWER(sites_relais) LIKE ?', ["%{$search}%"]);
+            });
+        }
+
         $clients = $query->orderBy('id')->paginate(10);
 
         $totalClientsCount = Client::count();
@@ -142,8 +158,9 @@ class ClientController extends Controller
     {
         $today = Carbon::today();
 
-        $query = Client::whereDate('date_reabonnement', '<', $today)
-                       ->where('statut', 'actif');
+        $query = Client::where('statut', 'actif')
+                       ->where('a_paye', 0)
+                       ->whereDate('date_reabonnement', '<', $today);
 
         if ($request->filled('search')) {
             $search = strtolower($request->input('search'));
@@ -213,13 +230,19 @@ class ClientController extends Controller
         return view('clients.suspendus', compact('clients', 'totalClientsCount', 'payes', 'nonPayes', 'actifs', 'suspendus'));
     }
 
+    // --- Marquer comme payé et mettre à jour la date ---
+    public function marquerCommePaye(Client $client)
+    {
+        $this->payerEtReabonner($client);
+        return redirect()->back()->with('success', 'Client marqué comme payé et date de réabonnement mise à jour.');
+    }
+
     public function reconnecter($id)
     {
         $client = Client::findOrFail($id);
-        $client->a_paye = 1;
-        $client->save();
+        $this->payerEtReabonner($client);
 
-        return redirect()->back()->with('success', 'Client reconnecté avec succès.');
+        return redirect()->back()->with('success', 'Client reconnecté et date de réabonnement mise à jour.');
     }
 
     public function deconnecter($id)
@@ -231,28 +254,7 @@ class ClientController extends Controller
         return redirect()->back()->with('success', 'Client déconnecté avec succès (non payé).');
     }
 
-    public function envoyerNotifications()
-    {
-        $aujourdhui = Carbon::today();
-        $dans7jours = Carbon::today()->addDays(7);
-
-        $clients = Client::whereBetween('date_reabonnement', [$aujourdhui, $dans7jours])
-                          ->whereNotNull('email')
-                          ->get();
-
-        foreach ($clients as $client) {
-            Mail::raw(
-                "Bonjour {$client->nom_client}, votre date de réabonnement approche. Merci de renouveler via ce lien : https://anyxtech.com/reabonnement",
-                function ($message) use ($client) {
-                    $message->to($client->email)
-                            ->subject('Réabonnement proche');
-                }
-            );
-        }
-
-        return redirect()->route('clients.index')->with('success', 'Notifications envoyées avec succès.');
-    }
-
+    // --- Méthodes de création, modification, suppression ---
     public function create()
     {
         return view('clients.create');
@@ -323,12 +325,36 @@ class ClientController extends Controller
         return redirect()->route('clients.index')->with('success', 'Client suspendu avec succès.');
     }
 
-    public function marquerCommePaye(Client $client)
+    public function reactiver($id)
     {
-        $client->a_paye = 1;
+        $client = Client::findOrFail($id);
+        $client->statut = 'actif';
         $client->save();
 
-        return redirect()->back()->with('success', 'Client marqué comme payé.');
+        return redirect()->back()->with('success', 'Client réactivé avec succès.');
+    }
+
+    // --- Notifications et relances ---
+    public function envoyerNotifications()
+    {
+        $aujourdhui = Carbon::today();
+        $dans7jours = Carbon::today()->addDays(7);
+
+        $clients = Client::whereBetween('date_reabonnement', [$aujourdhui, $dans7jours])
+                          ->whereNotNull('email')
+                          ->get();
+
+        foreach ($clients as $client) {
+            Mail::raw(
+                "Bonjour {$client->nom_client}, votre date de réabonnement approche. Merci de renouveler via ce lien : https://anyxtech.com/reabonnement",
+                function ($message) use ($client) {
+                    $message->to($client->email)
+                            ->subject('Réabonnement proche');
+                }
+            );
+        }
+
+        return redirect()->route('clients.index')->with('success', 'Notifications envoyées avec succès.');
     }
 
     public function relancerViaWhatsApp(Client $client, InfobipService $infobip)
@@ -373,6 +399,7 @@ class ClientController extends Controller
         }
     }
 
+    // --- Calcul et mise à jour des dates de réabonnement ---
     private function calculerDateReabonnement($jour)
     {
         $mois = now()->month;
@@ -421,33 +448,23 @@ class ClientController extends Controller
     {
         return view('clients.show', compact('client'));
     }
-    public function reactiver($id)
-    {
-        $client = Client::findOrFail($id);
-        $client->statut = 'actif';
-        $client->save();
 
-        return redirect()->back()->with('success', 'Client réactivé avec succès.');
-    }
-
-    
+    // --- Export PDF ---
     public function export(Request $request)
     {
         $type = $request->input('type', 'all');
 
-        // Récupérer les clients selon le type (exemple : réabonnements dépassés)
         if ($type === 'expired') {
-            $clients = Client::where('date_reabonnement', '<', now())->get();
+            $clients = Client::where('statut', 'actif')->where('a_paye', 0)->where('date_reabonnement', '<', now())->get();
         } else {
             $clients = Client::all();
         }
 
-        // Générer le PDF avec la vue
         $pdf = Pdf::loadView('clients.export_pdf', compact('clients'));
 
-        // Télécharger le PDF
         return $pdf->download('clients_reabonnement_depasses.pdf');
     }
+
     public function exportPdf()
     {
         $clients = Client::where('statut', 'actif')->get();
@@ -456,5 +473,5 @@ class ClientController extends Controller
         return $pdf->download('clients_actifs.pdf');
     }
 
-
+    // --- Fin du contrôleur ---
 }
