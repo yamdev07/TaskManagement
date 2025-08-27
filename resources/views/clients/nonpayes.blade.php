@@ -32,18 +32,21 @@
         <div class="card-body p-4">
             <div class="row align-items-center">
                 <div class="col-lg-6">
-                    <div class="position-relative">
-                        <i class="fas fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
-                        <input type="text" 
-                               class="form-control form-control-lg border-0 bg-light ps-5" 
-                               id="searchInput" 
-                               placeholder="Rechercher par nom, contact ou site relais..."
-                               style="border-radius: 12px;">
-                    </div>
+                    <form method="GET" action="{{ route('clients.nonpayes') }}">
+                        <div class="position-relative">
+                            <i class="fas fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                            <input type="text" 
+                                class="form-control form-control-lg border-0 bg-light ps-5" 
+                                name="search" 
+                                value="{{ request('search') }}" 
+                                placeholder="Rechercher par nom, contact ou site relais..."
+                                style="border-radius: 12px;">
+                        </div>
+                    </form>
                 </div>
                 <div class="col-lg-6 text-lg-end mt-3 mt-lg-0">
                     <a href="{{ route('clients.create') }}" 
-                       class="btn btn-anyxtech btn-lg px-4 py-2 shadow-sm">
+                    class="btn btn-anyxtech btn-lg px-4 py-2 shadow-sm">
                         <i class="fas fa-plus me-2"></i>
                         Ajouter un client
                     </a>
@@ -51,6 +54,7 @@
             </div>
         </div>
     </div>
+
 
     {{-- Avertissement clients non payés --}}
     <div class="alert alert-warning border-0 shadow-sm mb-4 text-center" style="max-width: 400px; margin: 0 auto;">

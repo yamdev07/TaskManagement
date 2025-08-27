@@ -27,18 +27,26 @@
 
     {{-- Barre d'outils --}}
     <div class="action-bar mb-4">
-        <div class="search-container">
-            <i class="fas fa-search search-icon"></i>
-            <input type="text" 
-                   class="search-input" 
-                   id="searchInput" 
-                   placeholder="Rechercher un client...">
-        </div>
+        <form method="GET" action="{{ route('clients.actifs') }}" class="d-flex flex-grow-1 gap-2">
+            <div class="search-container flex-grow-1">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" 
+                    name="search" 
+                    class="search-input" 
+                    placeholder="Rechercher un client..."
+                    value="{{ request('search') }}">
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-search me-2"></i> Rechercher
+            </button>
+        </form>
+
         <a href="{{ route('clients.index') }}" class="back-button">
             <i class="fas fa-arrow-left me-2"></i>
             Retour
         </a>
     </div>
+
 
     {{-- Contenu principal --}}
     @if($clients->isEmpty())

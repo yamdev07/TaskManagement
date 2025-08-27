@@ -87,14 +87,20 @@
         <div class="card-body p-4">
             <div class="row align-items-center">
                 <div class="col-lg-6">
-                    <div class="position-relative">
-                        <i class="fas fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
-                        <input type="text" 
-                            class="form-control form-control-lg border-0 bg-light ps-5" 
-                            id="searchInput" 
-                            placeholder="Rechercher par nom ou site relais..."
-                            style="border-radius: 12px;">
-                    </div>
+                    <form method="GET" action="{{ route('clients.expired') }}" class="d-flex">
+                        <div class="position-relative flex-grow-1">
+                            <i class="fas fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                            <input type="text"
+                                   name="search"
+                                   value="{{ request('search') }}"
+                                   class="form-control form-control-lg border-0 bg-light ps-5"
+                                   placeholder="Rechercher par nom, contact ou site relais..."
+                                   style="border-radius: 12px;">
+                        </div>
+                        <button type="submit" class="btn btn-anyxtech ms-2">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </form>
                 </div>
                 <div class="col-lg-6 text-lg-end mt-3 mt-lg-0">
                     <form action="{{ route('clients.export') }}" method="POST" class="d-inline-block">

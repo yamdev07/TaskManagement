@@ -12,8 +12,11 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // Exécuter la commande chaque 1er du mois à minuit
-        $schedule->command('clients:mettre-a-jour-reabonnement')->monthlyOn(1, '00:00');
+        // Remettre à 0 les paiements chaque 1er du mois à minuit
+        $schedule->command('clients:reset-paiement')->monthlyOn(1, '00:00');
+
+        // Mettre à jour les réabonnements chaque jour à minuit
+        $schedule->command('clients:mettre-a-jour-reabonnement')->dailyAt('00:00');
     }
 
     /**
