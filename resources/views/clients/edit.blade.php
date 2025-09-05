@@ -162,16 +162,11 @@
                             <div class="col-lg-6">
                                 <div class="form-floating mb-0">
                                     <select name="statut" id="statut" class="form-select form-select-modern" required>
-                                        <option value="actif" {{ old('statut', $client->statut) === 'actif' ? 'selected' : '' }}>
-                                            <i class="fas fa-check-circle"></i> Actif
-                                        </option>
-                                        <option value="inactif" {{ old('statut', $client->statut) === 'inactif' ? 'selected' : '' }}>
-                                            <i class="fas fa-times-circle"></i> Inactif
-                                        </option>
-                                        <option value="suspendu" {{ old('statut', $client->statut) === 'suspendu' ? 'selected' : '' }}>
-                                            <i class="fas fa-pause-circle"></i> Suspendu
-                                        </option>
+                                        <option value="actif" {{ old('statut', $client->statut) === 'actif' ? 'selected' : '' }}>Actif</option>
+                                        <option value="inactif" {{ old('statut', $client->statut) === 'inactif' ? 'selected' : '' }}>Inactif</option>
+                                        <option value="suspendu" {{ old('statut', $client->statut) === 'suspendu' ? 'selected' : '' }}>Suspendu</option>
                                     </select>
+
                                     <label for="statut">
                                         <i class="fas fa-info-circle me-2 text-info"></i>
                                         Statut du compte
@@ -184,14 +179,11 @@
 
                             <div class="col-lg-6">
                                 <div class="form-floating mb-0">
-                                    <select name="a_paye" id="a_paye" class="form-select form-select-modern" required>
-                                        <option value="1" {{ old('a_paye', $client->a_paye) == 1 ? 'selected' : '' }}>
-                                            ✅ Payé
-                                        </option>
-                                        <option value="0" {{ old('a_paye', $client->a_paye) == 0 ? 'selected' : '' }}>
-                                            ❌ Non payé
-                                        </option>
+                                   <select name="a_paye" id="a_paye" class="form-select form-select-modern" required>
+                                        <option value="1" {{ old('a_paye', $client->a_paye) == 1 ? 'selected' : '' }}>Payé</option>
+                                        <option value="0" {{ old('a_paye', $client->a_paye) == 0 ? 'selected' : '' }}>Non payé</option>
                                     </select>
+
                                     <label for="a_paye">
                                         <i class="fas fa-credit-card me-2 text-info"></i>
                                         Statut de paiement

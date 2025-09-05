@@ -95,7 +95,7 @@ class ClientController extends Controller
         $moisCourant = $today->month;
         $anneeCourante = $today->year;
 
-        // Mise à jour du statut basé sur les paiements
+        // Mise à jour du statut basé sur les paiements et dates
         foreach (Client::all() as $client) {
             $paiement = $client->paiements()
                 ->where('mois', $moisCourant)
@@ -108,8 +108,13 @@ class ClientController extends Controller
             // Statut actif/suspendu basé sur date de réabonnement
             if ($client->date_reabonnement < $today) {
                 $diffInMonths = Carbon::parse($client->date_reabonnement)->diffInMonths($today);
-                $client->statut = $diffInMonths > 2 ? 'suspendu' : 'actif';
+
+                // Option 1 : ne pas écraser le statut manuel
+                if ($client->statut !== 'suspendu') {
+                    $client->statut = $diffInMonths > 2 ? 'suspendu' : 'actif';
+                }
             }
+
             $client->save();
         }
 
@@ -142,10 +147,12 @@ class ClientController extends Controller
         $stats['clientsReabonnementProche'] = Client::whereDate('date_reabonnement', '<=', $today->copy()->addDays(5))
                                                     ->whereDate('date_reabonnement', '>=', $today)
                                                     ->count();
+
         $stats['clientsReabonnementDepasse'] = Client::where('date_reabonnement', '<', $today)->count();
 
         return view('clients.index', array_merge(compact('clients'), $stats));
     }
+
 
     // --- CLIENTS PAYES ---
     public function clientsPayes(Request $request)
@@ -345,7 +352,7 @@ class ClientController extends Controller
             'a_paye'            => 'nullable|boolean',
         ]);
 
-        $validatedData['date_reabonnement'] = $this->calculerDateReabonnement($client ?? new Client($validatedData));
+        $validatedData['date_reabonnement'] = $this->calculerDateReabonnement(new Client($validatedData));
         $validatedData['a_paye'] = $request->input('a_paye', 0);
 
         Client::create($validatedData);
@@ -374,19 +381,22 @@ class ClientController extends Controller
         $client->nom_client        = $request->nom_client;
         $client->contact           = $request->contact;
         $client->sites_relais      = $request->sites_relais;
-        $client->statut            = $request->statut;
+        $client->statut            = $request->statut;   // ⚡ ici il prendra bien 'suspendu'
         $client->categorie         = $request->categorie;
         $client->jour_reabonnement = $request->jour_reabonnement;
         $client->montant           = $request->montant;
         $client->a_paye            = (int) $request->a_paye;
 
-        // Recalcul automatique de la date de réabonnement à partir du jour choisi
-        $validatedData['date_reabonnement'] = $this->calculerDateReabonnement($client ?? new Client($validatedData));
+        // Recalcul automatique de la date de réabonnement
+        $client->date_reabonnement = $this->calculerDateReabonnement($client);
 
+        // Sauvegarde en BDD
         $client->save();
 
-        return redirect()->route('clients.index')->with('success', 'Client modifié avec succès et date de réabonnement mise à jour.');
+        return redirect()->route('clients.index')
+            ->with('success', 'Client modifié avec succès et date de réabonnement mise à jour.');
     }
+
 
 
     public function suspendre(Client $client)
