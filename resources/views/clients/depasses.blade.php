@@ -87,7 +87,7 @@
         <div class="card-body p-4">
             <div class="row align-items-center">
                 <div class="col-lg-6">
-                    <form method="GET" action="{{ route('clients.expired') }}" class="d-flex">
+                    <form method="GET" action="{{ route('clients.depasses') }}" class="d-flex">
                         <div class="position-relative flex-grow-1">
                             <i class="fas fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
                             <input type="text"
@@ -217,7 +217,16 @@
                                             $date = $client->date_reabonnement 
                                                 ? \Carbon\Carbon::parse($client->date_reabonnement)->format('d/m/Y') 
                                                 : 'bientôt';
-                                            $message = "Bonjour {$client->nom_client}, votre abonnement est expiré depuis le {$date}. Merci de régulariser au plus vite pour éviter toute suspension de service. - AnyxTech";
+                                            $message = "Bonjour cher(e) client(e) {$client->nom_client}. Nous vous notifions que votre abonnement internet a expiré depuis le {$date}.
+                                            
+                                            Nous vous prions de bien vouloir procéder au rébonnement pour éviter une interruption de vos services. 
+                                            
+                                             ANYXTECH grandissons ensemble !
+
+                                            MomoPay : `*880*41*833398*{$client->montant}#`
+
+                                            Services clientèle ANYXTECH;
+                                            0141421563 / 0152415241";
                                         @endphp
 
                                         <a href="{!! 'https://wa.me/' . $numero . '?text=' . urlencode($message) !!}" 
