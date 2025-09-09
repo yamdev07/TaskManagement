@@ -212,7 +212,17 @@
                                         $date = $client->date_reabonnement 
                                             ? \Carbon\Carbon::parse($client->date_reabonnement)->format('d/m/Y') 
                                             : 'bientôt';
-                                        $message_whatsapp = "Bonjour {$client->nom_client}, votre réabonnement AnyxTech arrive à échéance le {$date}. Merci de penser à renouveler pour éviter toute interruption de service.";
+                                        $message_whatsapp = "Bonjour cher(e) client(e) {$client->nom_client}, 
+                                            Nous vous notifions que votre abonnement Internet arrive à échéance le {$date}. 
+
+                                            Nous vous prions de bien vouloir procéder au rébonnement pour éviter une interruption de vos services. 
+
+                                            ANYXTECH grandissons ensemble !
+
+                                            MomoPay : `*880*41*833398*{$client->montant}#`
+
+                                            Services clientèle ANYXTECH;
+                                            0141421563 / 0152415241";
                                         
                                         // Encode le message pour l'URL
                                         $encoded_message = urlencode($message_whatsapp);
