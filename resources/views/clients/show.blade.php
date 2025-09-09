@@ -188,13 +188,22 @@
                     </form>
                 @endif
 
-                {{-- Si vous avez bien renommé la route WhatsApp comme suggéré --}}
-                <form action="{{ route('clients.relancerWhatsApp', $client->id) }}" method="POST">
-                    @csrf
-                    <button type="submit" class="btn btn-success px-4 py-2 shadow-sm rounded-pill">
-                        <i class="fab fa-whatsapp me-2"></i> Relancer par WhatsApp
-                    </button>
-                </form>
+               @php
+                    // Nettoyer le numéro et ajouter l'indicatif (ici +229 pour Bénin, adapte si besoin)
+                    $numero = preg_replace('/[^0-9]/', '', $client->contact);
+                    if (strlen($numero) === 8) {
+                        $numero = '229' . $numero;
+                    }
+
+                    // Message prérempli (tu peux personnaliser)
+                    $message = "Bonjour {$client->nom_client}, nous vous rappelons que votre abonnement est en attente de paiement. Merci de nous contacter rapidement.";
+                    $messageEncoded = urlencode($message);
+                @endphp
+
+                <a href="https://wa.me/{{ $numero }}?text={{ $messageEncoded }}" target="_blank" class="btn btn-success px-4 py-2 shadow-sm rounded-pill">
+                    <i class="fab fa-whatsapp me-2"></i> Relancer par WhatsApp
+                </a>
+
             </div>
         </div>
     </div>
