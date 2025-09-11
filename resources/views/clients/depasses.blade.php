@@ -209,25 +209,32 @@
                                 <td>{{ number_format($client->montant, 0, ',', ' ') }} F</td>
                                 <td class="pe-4">
                                     <div class="d-flex gap-2">
-                                        @php
+                                       @php
                                             $numero = preg_replace('/[^0-9]/', '', $client->contact);
                                             if (strlen($numero) === 8) {
-                                                $numero = '229' . $numero;
+                                                $numero = '229' . $numero; // Ajouter l’indicatif du Bénin
                                             }
+
                                             $date = $client->date_reabonnement 
                                                 ? \Carbon\Carbon::parse($client->date_reabonnement)->format('d/m/Y') 
                                                 : 'bientôt';
-                                            $message = "Bonjour cher(e) client(e) {$client->nom_client}. Nous vous notifions que votre abonnement internet a expiré depuis le {$date}.
-                                            
-                                            Nous vous prions de bien vouloir procéder au rébonnement pour éviter une interruption de vos services. 
-                                            
-                                             ANYXTECH grandissons ensemble !
 
-                                            MomoPay : `*880*41*833398*{$client->montant}#`
+                                            // Construire le message avec des sauts de ligne \n
+                                            $message = "Bonjour cher(e) client(e) {$client->nom_client},\n"
+                                                . "Nous vous notifions que votre abonnement Internet a expiré depuis le {$date}.\n\n"
+                                                . "Nous vous prions de bien vouloir procéder au réabonnement pour éviter une interruption de vos services.\n\n"
+                                                . "ANYXTECH - grandissons ensemble !\n\n"
+                                                . "📱 MomoPay : *880*41*833398*{$client->montant}#\n"
+                                                . "📞 Services clientèle ANYXTECH : 0141421563 / 0152415241";
 
-                                            Services clientèle ANYXTECH;
-                                            0141421563 / 0152415241";
+                                            // Encoder le message correctement
+                                            $encoded_message = rawurlencode($message);
+
+                                            // Utiliser l’API WhatsApp (plus fiable que wa.me)
+                                            $whatsapp_link = "https://api.whatsapp.com/send?phone={$numero}&text={$encoded_message}";
                                         @endphp
+
+
 
                                         <a href="{!! 'https://wa.me/' . $numero . '?text=' . urlencode($message) !!}" 
                                            target="_blank" 
