@@ -204,32 +204,29 @@
                                 <td>{{ number_format($client->montant, 0, ',', ' ') }} F</td>
                                 <td class="pe-4">
                                     @php
-                                        // Nettoyer le numéro pour le format WhatsApp (sans le + initial)
                                         $numero_brut = preg_replace('/[^0-9]/', '', $client->contact);
-                                        if (strlen($numero_brut) === 8) { // Si c'est un numéro à 8 chiffres du Bénin
-                                            $numero_brut = '229' . $numero_brut; // Ajouter l'indicatif du Bénin
+                                        if (strlen($numero_brut) === 8) { 
+                                            $numero_brut = '229' . $numero_brut; 
                                         }
-                                        $date = $client->date_reabonnement 
-                                            ? \Carbon\Carbon::parse($client->date_reabonnement)->format('d/m/Y') 
+
+                                        $date = $client->date_reabonnement
+                                            ? \Carbon\Carbon::parse($client->date_reabonnement)->format('d/m/Y')
                                             : 'bientôt';
-                                        $message_whatsapp = "Bonjour cher(e) client(e) {$client->nom_client}, 
-                                            Nous vous notifions que votre abonnement Internet arrive à échéance le {$date}. 
 
-                                            Nous vous prions de bien vouloir procéder au rébonnement pour éviter une interruption de vos services. 
+                                        // Ici on met des vrais \n
+                                        $message_whatsapp = "Bonjour cher(e) client(e) {$client->nom_client},\n"
+                                            . "Nous vous notifions que votre abonnement Internet arrive à échéance le {$date}.\n\n"
+                                            . "Nous vous prions de bien vouloir procéder au réabonnement pour éviter une interruption de vos services.\n\n"
+                                            . "ANYXTECH - Grandissons ensemble !\n\n"
+                                            . "📱 MomoPay : *880*41*833398*{$client->montant}#\n"
+                                            . "📞 Services clientèle : 0141421563 / 0152415241";
 
-                                            ANYXTECH grandissons ensemble !
+                                        // Encoder correctement
+                                        $encoded_message = rawurlencode($message_whatsapp);
 
-                                            MomoPay : `*880*41*833398*{$client->montant}#`
-
-                                            Services clientèle ANYXTECH;
-                                            0141421563 / 0152415241";
-                                        
-                                        // Encode le message pour l'URL
-                                        $encoded_message = urlencode($message_whatsapp);
-                                        
-                                        // Construit le lien WhatsApp
                                         $whatsapp_link = "https://wa.me/{$numero_brut}?text={$encoded_message}";
                                     @endphp
+
 
                                     {{-- NOUVEAU LIEN WHATSAPP SIMPLIFIÉ --}}
                                     <a href="{{ $whatsapp_link }}" 
