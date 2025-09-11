@@ -65,9 +65,13 @@
         </div>
     @else
         {{-- Avertissement clients payés --}}
-        <div class="alert alert-warning border-0 shadow-sm mb-4 text-center" style="max-width: 400px; margin: 0 auto;">
-            <i class="fas fa-exclamation-triangle me-2"></i>
-            Clients Actifs Payés : <strong>{{ $totalPayes }}</strong>
+        <div class="row mb-4 text-center">
+            <div class="col-md-2 offset-md-5">
+                <div class="alert alert-success border-0 shadow-sm p-3">
+                    <i class="fas fa-check-circle me-2"></i>
+                    Clients Actifs Payés : <strong>{{ $payes }}</strong>
+                </div>
+            </div>
         </div>
 
         {{-- Tableau moderne --}}
