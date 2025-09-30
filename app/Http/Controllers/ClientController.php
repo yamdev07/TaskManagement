@@ -21,46 +21,78 @@ class ClientController extends Controller
     {
         $today = Carbon::today();
 
-        // Récupérer le dernier paiement par date réelle
-        $dernierPaiement = $client->paiements()->latest('date_paiement')->first();
+        // 1️⃣ Récupérer le mois impayé le plus ancien
+        $moisImpaye = $client->paiements()
+            ->where('statut', false)
+            ->orderBy('annee')
+            ->orderBy('mois')
+            ->first();
 
-        if ($dernierPaiement) {
-            // On ajoute 1 mois au dernier paiement pour déterminer le prochain
-            $dateProchainPaiement = Carbon::parse($dernierPaiement->date_paiement)->addMonth();
-            $mois = $dateProchainPaiement->month;
-            $annee = $dateProchainPaiement->year;
+        if ($moisImpaye) {
+            // On marque ce mois comme payé
+            $moisImpaye->statut = true;
+            $moisImpaye->date_paiement = $today;
+            $moisImpaye->save();
+
+            $mois = $moisImpaye->mois;
+            $annee = $moisImpaye->annee;
         } else {
-            // Si aucun paiement existant, utiliser le mois et l'année actuels
+            // Si tous les mois sont payés, on crée le paiement pour le mois courant
             $mois = $today->month;
             $annee = $today->year;
+
+            Paiement::create([
+                'client_id'     => $client->id,
+                'mois'          => $mois,
+                'annee'         => $annee,
+                'statut'        => true,
+                'montant'       => $client->montant,
+                'date_paiement' => $today,
+            ]);
         }
 
-        // Crée un paiement pour le mois correct
-        Paiement::create([
-            'client_id'    => $client->id,
-            'mois'         => $mois,
-            'annee'        => $annee,
-            'statut'       => true,
-            'montant'      => $client->montant,
-            'date_paiement'=> $today,
-        ]);
-
-        // Mise à jour de la date de réabonnement
+        // 2️⃣ Mise à jour de la date de réabonnement sur le mois payé seulement
         if ($client->jour_reabonnement) {
             $jour = min($client->jour_reabonnement, Carbon::create($annee, $mois, 1)->endOfMonth()->day);
-            $nouvelleDate = Carbon::create($annee, $mois, $jour);
-
-            // Si la nouvelle date est déjà passée, ajouter 1 mois
-            if ($nouvelleDate->isPast()) {
-                $nouvelleDate->addMonth();
-            }
-
-            $client->date_reabonnement = $nouvelleDate->toDateString();
+            $client->date_reabonnement = Carbon::create($annee, $mois, $jour)->toDateString();
         }
+
+        // 3️⃣ Statut actif et payé pour ce mois
+        $client->statut = 'actif';
+        $client->a_paye = 1;
 
         $client->save();
     }
 
+    private function prochainMoisDû(Client $client)
+    {
+        // Cherche le mois impayé le plus ancien
+        $moisImpaye = $client->paiements()
+            ->where('statut', false)
+            ->orderBy('annee')
+            ->orderBy('mois')
+            ->first();
+
+        if ($moisImpaye) {
+            // Si un mois impayé existe, c'est le prochain à relancer
+            return Carbon::create($moisImpaye->annee, $moisImpaye->mois, $client->jour_reabonnement);
+        }
+
+        // Si tous les mois sont payés, le prochain mois dû = mois suivant le dernier paiement
+        $dernierPaiement = $client->paiements()->orderBy('annee', 'desc')->orderBy('mois', 'desc')->first();
+        if ($dernierPaiement) {
+            $mois = $dernierPaiement->mois + 1;
+            $annee = $dernierPaiement->annee;
+            if ($mois > 12) {
+                $mois = 1;
+                $annee += 1;
+            }
+            return Carbon::create($annee, $mois, $client->jour_reabonnement);
+        }
+
+        // Si aucun paiement, le mois dû = mois courant
+        return Carbon::now();
+    }
 
     // --- Méthode privée pour récupérer les statistiques ---
     private function getStats()
@@ -95,30 +127,36 @@ class ClientController extends Controller
         $moisCourant = $today->month;
         $anneeCourante = $today->year;
 
-        // Mise à jour du statut basé sur les paiements et dates
-        foreach (Client::all() as $client) {
+        // Récupérer tous les clients pour mise à jour dynamique
+        $clientsAll = Client::all();
+        foreach ($clientsAll as $client) {
+            // Vérifie si le client a payé ce mois
             $paiement = $client->paiements()
                 ->where('mois', $moisCourant)
                 ->where('annee', $anneeCourante)
                 ->where('statut', true)
                 ->first();
-
             $client->a_paye = $paiement ? 1 : 0;
 
             // Statut actif/suspendu basé sur date de réabonnement
-            if ($client->date_reabonnement < $today) {
-                $diffInMonths = Carbon::parse($client->date_reabonnement)->diffInMonths($today);
+            if ($client->date_reabonnement) {
+                $diffInMonths = Carbon::parse($client->date_reabonnement)->diffInMonths($today, false);
 
-                // Option 1 : ne pas écraser le statut manuel
-                if ($client->statut !== 'suspendu') {
-                    $client->statut = $diffInMonths > 2 ? 'suspendu' : 'actif';
+                // Suspendu si > 2 mois de retard, sinon actif
+                if ($diffInMonths < -2) {
+                    $client->statut = 'suspendu';
+                } else {
+                    $client->statut = 'actif';
                 }
             }
+
+            // Calcul du prochain mois dû
+            $client->prochain_mois_du = $this->prochainMoisDû($client)->format('Y-m-d');
 
             $client->save();
         }
 
-        // Requête avec recherche
+        // Requête avec recherche et pagination
         $query = Client::query();
         if ($request->filled('search')) {
             $search = strtolower($request->input('search'));
@@ -131,7 +169,7 @@ class ClientController extends Controller
 
         $clients = $query->orderBy('id')->paginate(10)->appends($request->all());
 
-        // Statistiques par mois courant
+        // Statistiques
         $stats = [
             'totalClientsCount' => Client::count(),
             'payes' => Client::whereHas('paiements', function($q) use ($moisCourant, $anneeCourante){
@@ -152,6 +190,7 @@ class ClientController extends Controller
 
         return view('clients.index', array_merge(compact('clients'), $stats));
     }
+
 
 
     // --- CLIENTS PAYES ---
@@ -313,11 +352,18 @@ class ClientController extends Controller
     }
 
     // --- Marquer comme payé ---
-    public function marquerCommePaye(Client $client)
+   public function marquerCommePaye(Client $client)
     {
         $this->payerEtReabonner($client);
+
+        // Statut payé + actif
+        $client->a_paye = 1;
+        $client->statut = 'actif';
+        $client->save();
+
         return redirect()->back()->with('success', 'Client marqué comme payé et date de réabonnement mise à jour.');
     }
+
 
     public function reconnecter($id)
     {

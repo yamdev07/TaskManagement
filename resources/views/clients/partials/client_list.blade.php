@@ -19,7 +19,7 @@
         <td>{{ $client->contact }}</td>
         <td>{{ $client->site_relais ?? 'N/A' }}</td>
         <td>
-            @if ($client->statut == 'actif') {{-- Assurez-vous que les valeurs correspondent à celles de votre BDD --}}
+            @if ($client->statut == 'actif')
                 <span class="badge bg-success-subtle text-success fw-semibold py-2 px-3 rounded-pill">Actif</span>
             @elseif ($client->statut == 'suspendu')
                 <span class="badge bg-warning-subtle text-warning fw-2 px-3 rounded-pill">Suspendu</span>
@@ -48,6 +48,20 @@
             @endif
         </td>
         <td class="fw-semibold text-anyxtech">{{ number_format($client->montant ?? 0, 0, ',', ' ') }} FCFA</td>
+
+        {{-- Nouvelle colonne Prochain Mois Dû --}}
+        <td>
+            @if ($client->prochain_mois_du !== 'Non payé')
+                <span class="badge {{ $client->a_paye ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger' }} fw-semibold py-2 px-3 rounded-pill">
+                    {{ $client->prochain_mois_du }}
+                </span>
+            @else
+                <span class="badge bg-danger-subtle text-danger fw-semibold py-2 px-3 rounded-pill">
+                    Non payé
+                </span>
+            @endif
+        </td>
+
         <td>
             <div class="d-flex gap-2">
                 <a href="{{ route('clients.show', $client->id) }}" class="btn btn-outline-primary btn-sm rounded-pill" data-bs-toggle="tooltip" title="Voir les détails">
