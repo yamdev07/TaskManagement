@@ -88,7 +88,7 @@
     
     <div class="buttons">
         <a href="{{ route('login') }}" class="btn">Se connecter</a>
-        <a href="{{ route('register') }}" class="btn btn-secondary">S'inscrire</a>
+        
     </div>
 </body>
 </html>

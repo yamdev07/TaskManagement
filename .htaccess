@@ -1,0 +1,8 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /clients/
+
+    # Redirige toutes les requêtes vers /public
+    RewriteCond %{REQUEST_URI} !^/clients/public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>

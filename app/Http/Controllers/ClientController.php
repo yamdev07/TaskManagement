@@ -17,7 +17,7 @@ class ClientController extends Controller
 
     // --- Méthode privée pour gérer paiement et réabonnement ---
 
-     private function payerEtReabonner(Client $client)
+    private function payerEtReabonner(Client $client)
     {
         $today = Carbon::today();
 
@@ -112,14 +112,6 @@ class ClientController extends Controller
         return compact('totalClientsCount', 'payes', 'nonPayes', 'actifs', 'suspendus');
     }
 
-
-    // --- Liste des clients avec mise à jour automatique des statuts ---
-    // Dans Client.php, ajoute la relation paiements
-    public function paiements()
-    {
-        return $this->hasMany(Paiement::class);
-    }
-
     // --- INDEX (liste clients avec stats) ---
     public function index(Request $request)
     {
@@ -138,15 +130,17 @@ class ClientController extends Controller
                 ->first();
             $client->a_paye = $paiement ? 1 : 0;
 
-            // Statut actif/suspendu basé sur date de réabonnement
-            if ($client->date_reabonnement) {
-                $diffInMonths = Carbon::parse($client->date_reabonnement)->diffInMonths($today, false);
-
-                // Suspendu si > 2 mois de retard, sinon actif
-                if ($diffInMonths < -2) {
+            // CORRECTION : Logique de suspension automatique UNIQUEMENT si le statut n'est pas déjà géré manuellement
+            // On ne change pas le statut si le client a été suspendu manuellement
+            if ($client->date_reabonnement && $client->statut !== 'suspendu') {
+                $dateReabonnement = Carbon::parse($client->date_reabonnement);
+                
+                // Calculer la date limite (date_reabonnement + 2 mois)
+                $dateLimite = $dateReabonnement->copy()->addMonths(2);
+                
+                // Suspension automatique si la date actuelle dépasse la date limite
+                if ($today->gt($dateLimite)) {
                     $client->statut = 'suspendu';
-                } else {
-                    $client->statut = 'actif';
                 }
             }
 
@@ -190,8 +184,6 @@ class ClientController extends Controller
 
         return view('clients.index', array_merge(compact('clients'), $stats));
     }
-
-
 
     // --- CLIENTS PAYES ---
     public function clientsPayes(Request $request)
@@ -261,7 +253,6 @@ class ClientController extends Controller
         return view('clients.nonpayes', array_merge(compact('clients'), $stats));
     }
 
-
     // --- Liste clients à réabonnement proche ---
     public function aReabonnement(Request $request)
     {
@@ -285,7 +276,7 @@ class ClientController extends Controller
     }
 
     // --- Liste clients dépassés ---
-        public function depasses(Request $request)
+    public function depasses(Request $request)
     {
         $today = Carbon::today();
         $moisCourant = $today->month;
@@ -311,7 +302,6 @@ class ClientController extends Controller
 
         return view('clients.depasses', array_merge(compact('clients'), $stats));
     }
-
 
     // --- Liste clients actifs ---
     public function clientsActifs(Request $request)
@@ -352,7 +342,7 @@ class ClientController extends Controller
     }
 
     // --- Marquer comme payé ---
-   public function marquerCommePaye(Client $client)
+    public function marquerCommePaye(Client $client)
     {
         $this->payerEtReabonner($client);
 
@@ -363,7 +353,6 @@ class ClientController extends Controller
 
         return redirect()->back()->with('success', 'Client marqué comme payé et date de réabonnement mise à jour.');
     }
-
 
     public function reconnecter($id)
     {
@@ -398,7 +387,11 @@ class ClientController extends Controller
             'a_paye'            => 'nullable|boolean',
         ]);
 
-        $validatedData['date_reabonnement'] = $this->calculerDateReabonnement(new Client($validatedData));
+        // CORRECTION : Calcul automatique de la date de réabonnement
+        $today = Carbon::today();
+        $jour = min($validatedData['jour_reabonnement'], $today->endOfMonth()->day);
+        $validatedData['date_reabonnement'] = Carbon::create($today->year, $today->month, $jour)->toDateString();
+        
         $validatedData['a_paye'] = $request->input('a_paye', 0);
 
         Client::create($validatedData);
@@ -406,7 +399,9 @@ class ClientController extends Controller
         return redirect()->route('clients.index')->with('success', 'Client ajouté avec succès !');
     }
 
-    public function edit(Client $client) { return view('clients.edit', compact('client')); }
+    public function edit(Client $client) { 
+        return view('clients.edit', compact('client')); 
+    }
 
     public function update(Request $request, $id)
     {
@@ -427,13 +422,13 @@ class ClientController extends Controller
         $client->nom_client        = $request->nom_client;
         $client->contact           = $request->contact;
         $client->sites_relais      = $request->sites_relais;
-        $client->statut            = $request->statut;   // ⚡ ici il prendra bien 'suspendu'
+        $client->statut            = $request->statut; // ⚡ Respecte le choix manuel
         $client->categorie         = $request->categorie;
         $client->jour_reabonnement = $request->jour_reabonnement;
         $client->montant           = $request->montant;
         $client->a_paye            = (int) $request->a_paye;
 
-        // Recalcul automatique de la date de réabonnement
+        // CORRECTION : Recalculer la date de réabonnement
         $client->date_reabonnement = $this->calculerDateReabonnement($client);
 
         // Sauvegarde en BDD
@@ -443,14 +438,14 @@ class ClientController extends Controller
             ->with('success', 'Client modifié avec succès et date de réabonnement mise à jour.');
     }
 
-
-
-    public function suspendre(Client $client)
+    // --- CORRECTION : Méthodes pour suspendre/réactiver manuellement ---
+    public function suspendre($id)
     {
+        $client = Client::findOrFail($id);
         $client->statut = 'suspendu';
         $client->save();
 
-        return redirect()->route('clients.index')->with('success', 'Client suspendu avec succès.');
+        return redirect()->back()->with('success', 'Client suspendu avec succès.');
     }
 
     public function reactiver($id)
@@ -492,7 +487,7 @@ class ClientController extends Controller
 
         return $success
             ? back()->with('success', "Message WhatsApp envoyé à {$nomClient} via Infobip.")
-            : back()->with('error', "Échec de l’envoi WhatsApp via Infobip.");
+            : back()->with('error', "Échec de l'envoi WhatsApp via Infobip.");
     }
 
     public function relancer($id, InfobipService $infobip)
@@ -514,36 +509,36 @@ class ClientController extends Controller
             : redirect()->back()->with('error', "Erreur lors de l'envoi du message.");
     }
 
-    // --- Calcul et mise à jour des dates de réabonnement ---
+    // --- CORRECTION : Calcul de la date de réabonnement ---
     private function calculerDateReabonnement(Client $client)
     {
-        $dernierPaiement = $client->paiements()->latest('annee')->latest('mois')->first();
-        if ($dernierPaiement) {
-            $mois = $dernierPaiement->mois + 1;
-            $annee = $dernierPaiement->annee;
+        // Si le client a payé, on utilise le mois suivant
+        if ($client->a_paye) {
+            $today = Carbon::today();
+            $mois = $today->month + 1;
+            $annee = $today->year;
             if ($mois > 12) {
                 $mois = 1;
                 $annee += 1;
             }
         } else {
-            $mois = now()->month;
-            $annee = now()->year;
+            // Sinon, on utilise le mois courant
+            $today = Carbon::today();
+            $mois = $today->month;
+            $annee = $today->year;
         }
 
-        $jour = $client->jour_reabonnement;
-        $jour = min($jour, Carbon::create($annee, $mois, 1)->endOfMonth()->day);
+        // Calculer le jour en respectant la limite du mois
+        $jour = min($client->jour_reabonnement, Carbon::create($annee, $mois, 1)->endOfMonth()->day);
 
         return Carbon::create($annee, $mois, $jour)->toDateString();
     }
 
-
     public function mettreAJourDatesReabonnement()
     {
-        foreach (Client::whereNotNull('jour_reabonnement')->get() as $client) {
+        foreach (Client::all() as $client) {
             try {
-                $nouvelleDate = Carbon::create(now()->year, now()->month, $client->jour_reabonnement);
-                if ($nouvelleDate->isPast()) $nouvelleDate->addMonth();
-                $client->date_reabonnement = $nouvelleDate->toDateString();
+                $client->date_reabonnement = $this->calculerDateReabonnement($client);
                 $client->save();
             } catch (\Exception $e) {
                 \Log::warning("Impossible de mettre à jour la date pour client ID: {$client->id}. Erreur: " . $e->getMessage());
@@ -553,7 +548,9 @@ class ClientController extends Controller
         return response()->json(['message' => 'Dates de réabonnement mises à jour avec succès.']);
     }
 
-    public function show(Client $client) { return view('clients.show', compact('client')); }
+    public function show(Client $client) { 
+        return view('clients.show', compact('client')); 
+    }
 
     // --- Export PDF ---
     public function export(Request $request)

@@ -230,6 +230,7 @@
                                            id="date_reabonnement" 
                                            class="form-control form-control-modern" 
                                            value="{{ old('date_reabonnement', $client->date_reabonnement) }}" 
+                                           readonly
                                            required>
                                     <label for="date_reabonnement">
                                         <i class="fas fa-calendar me-2 text-success"></i>
@@ -238,6 +239,10 @@
                                     @error('date_reabonnement')
                                         <div class="invalid-feedback d-block">{{ $message }}</div>
                                     @enderror
+                                    <small class="text-muted mt-1 d-block">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Calculée automatiquement
+                                    </small>
                                 </div>
                             </div>
 
@@ -258,6 +263,22 @@
                                     @error('montant')
                                         <div class="invalid-feedback d-block">{{ $message }}</div>
                                     @enderror
+                                </div>
+                            </div>
+
+                            {{-- Message d'information --}}
+                            <div class="col-12">
+                                <div class="alert alert-info border-0 mt-3">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-info-circle me-3 fs-5 text-info"></i>
+                                        <div>
+                                            <h6 class="alert-heading mb-1">Calcul automatique de la date</h6>
+                                            <p class="mb-0 small">
+                                                La date de réabonnement est calculée automatiquement en fonction du jour de réabonnement 
+                                                et du statut de paiement. Elle sera mise à jour lors de la sauvegarde.
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -475,6 +496,12 @@
         transform: translateY(-1px);
     }
 
+    .alert-info {
+        background-color: rgba(224, 242, 254, 0.5);
+        border: 1px solid rgba(59, 130, 246, 0.2);
+        border-radius: 12px;
+    }
+
     @media (max-width: 768px) {
         .container-fluid {
             padding-left: 1rem;
@@ -500,7 +527,7 @@
     }
 </style>
 
-{{-- Scripts avec améliorations --}}
+{{-- Scripts avec calcul automatique de la date de réabonnement --}}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const form = document.getElementById('clientEditForm');
@@ -508,20 +535,73 @@
         const btnText = submitBtn.querySelector('.btn-text');
         const spinner = submitBtn.querySelector('.spinner-border');
 
-        // Animation de soumission du formulaire
+        // === CALCUL AUTOMATIQUE DE LA DATE DE RÉABONNEMENT ===
+        function calculerDateReabonnement() {
+            const jourReabonnement = parseInt(document.getElementById('jour_reabonnement').value);
+            const statutPaiement = document.getElementById('a_paye').value;
+            const dateReabonnementInput = document.getElementById('date_reabonnement');
+
+            if (jourReabonnement >= 1 && jourReabonnement <= 31) {
+                const aujourdHui = new Date();
+                let mois = aujourdHui.getMonth() + 1;
+                let annee = aujourdHui.getFullYear();
+
+                // Si le client est payé, on prend le mois suivant
+                if (statutPaiement === '1') {
+                    mois += 1;
+                    if (mois > 12) {
+                        mois = 1;
+                        annee += 1;
+                    }
+                }
+
+                // Ajuster le jour pour ne pas dépasser le nombre de jours du mois
+                const dernierJourDuMois = new Date(annee, mois, 0).getDate();
+                const jourAjuste = Math.min(jourReabonnement, dernierJourDuMois);
+
+                // Formater la date au format YYYY-MM-DD
+                const dateFormatee = `${annee}-${mois.toString().padStart(2, '0')}-${jourAjuste.toString().padStart(2, '0')}`;
+                
+                // Mettre à jour le champ date_reabonnement
+                dateReabonnementInput.value = dateFormatee;
+                
+                console.log('Date de réabonnement calculée:', dateFormatee);
+            }
+        }
+
+        // Écouter les changements sur les champs pertinents
+        document.getElementById('jour_reabonnement').addEventListener('change', calculerDateReabonnement);
+        document.getElementById('jour_reabonnement').addEventListener('input', calculerDateReabonnement);
+        document.getElementById('a_paye').addEventListener('change', calculerDateReabonnement);
+
+        // Calculer initialement au chargement
+        calculerDateReabonnement();
+
+        // === VALIDATION AVANT SOUMISSION ===
         form.addEventListener('submit', function(e) {
+            // S'assurer que la date de réabonnement est calculée
+            calculerDateReabonnement();
+            
+            const dateReabonnement = document.getElementById('date_reabonnement').value;
+            if (!dateReabonnement) {
+                e.preventDefault();
+                alert('Erreur : La date de réabonnement n\'a pas pu être calculée. Veuillez vérifier le jour de réabonnement.');
+                return;
+            }
+
+            // Animation de soumission
             submitBtn.disabled = true;
             btnText.textContent = 'Mise à jour...';
             spinner.classList.remove('d-none');
             
-            // Réactiver le bouton après 3 secondes en cas de problème
+            // Réactiver le bouton après 5 secondes en cas de problème
             setTimeout(() => {
                 if (submitBtn.disabled) {
                     submitBtn.disabled = false;
                     btnText.textContent = 'Mettre à jour';
                     spinner.classList.add('d-none');
                 }
-            }, 3000);
+            }, 5000);
         });
 
         // Validation en temps réel
@@ -584,13 +664,12 @@
             }, index * 200);
         });
 
-        // Prévisualisation des modifications
+        // Indicateur de modifications non sauvegardées
         const originalValues = {};
         inputs.forEach(input => {
             originalValues[input.name] = input.value;
         });
 
-        // Indicateur de modifications non sauvegardées
         let hasChanges = false;
         inputs.forEach(input => {
             input.addEventListener('change', function() {
@@ -619,6 +698,12 @@
                 return e.returnValue;
             }
         });
+
+        // Debug: Afficher les valeurs dans la console
+        console.log('Valeurs initiales:');
+        console.log('- Jour réabonnement:', document.getElementById('jour_reabonnement').value);
+        console.log('- Statut paiement:', document.getElementById('a_paye').value);
+        console.log('- Date réabonnement:', document.getElementById('date_reabonnement').value);
     });
-</script>
+</script> 
 @endsection
