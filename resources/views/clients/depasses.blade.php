@@ -209,43 +209,65 @@
                                 <td>{{ number_format($client->montant, 0, ',', ' ') }} F</td>
                                 <td class="pe-4">
                                     <div class="d-flex gap-2">
-                                       @php
+                                        @php
+                                            // ----------------------------
+                                            // Numéro client format international
+                                            // ----------------------------
                                             $numero = preg_replace('/[^0-9]/', '', $client->contact);
                                             if (strlen($numero) === 8) {
-                                                $numero = '229' . $numero; // Ajouter l’indicatif du Bénin
+                                                $numero = '229' . $numero;
                                             }
 
-                                            $date = $client->date_reabonnement 
-                                                ? \Carbon\Carbon::parse($client->date_reabonnement)->format('d/m/Y') 
+                                            // ----------------------------
+                                            // Date de réabonnement formatée
+                                            // ----------------------------
+                                            $date = $client->date_reabonnement
+                                                ? \Carbon\Carbon::parse($client->date_reabonnement)->format('d/m/Y')
                                                 : 'bientôt';
 
-                                            // Construire le message avec des sauts de ligne \n
-                                            $message = "Bonjour cher(e) client(e) {$client->nom_client},\n"
-                                                . "Nous vous notifions que votre abonnement Internet a expiré depuis le {$date}.\n\n"
-                                                . "Nous vous prions de bien vouloir procéder au réabonnement pour éviter une interruption de vos services.\n\n"
-                                                . "ANYXTECH - grandissons ensemble !\n\n"
-                                                . "📱 MomoPay : *880*41*833398*{$client->montant}#\n"
-                                                . "📞 Services clientèle ANYXTECH : 0141421563 / 0152415241";
+                                            // ----------------------------
+                                            // Message WhatsApp clair et lisible
+                                            // ----------------------------
+                                            $message = <<<MSG
+                                Bonjour cher(e) client(e) {$client->nom_client},
+                                Nous vous notifions que votre abonnement Internet a expiré depuis le {$date}.
 
-                                            // Encoder le message correctement
+                                Nous vous prions de bien vouloir procéder au réabonnement pour éviter une interruption de vos services.
+
+                                ANYXTECH - grandissons ensemble !
+
+                                📱 MomoPay : *880*41*833398*{$client->montant}#
+                                📞 Services clientèle ANYXTECH : 0141421563 / 0152415241
+                                MSG;
+
+                                            // ----------------------------
+                                            // Encodage strict pour WhatsApp
+                                            // ----------------------------
                                             $encoded_message = rawurlencode($message);
 
-                                            // Utiliser l’API WhatsApp (plus fiable que wa.me)
-                                            $whatsapp_link = "https://api.whatsapp.com/send?phone={$numero}&text={$encoded_message}";
+                                            // ----------------------------
+                                            // Lien universel selon appareil
+                                            // ----------------------------
+                                            $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+                                            if (preg_match('/Mobile|Android|iPhone|iPad|iPod/i', $user_agent)) {
+                                                $whatsapp_link = "https://api.whatsapp.com/send?phone={$numero}&text={$encoded_message}";
+                                            } else {
+                                                $whatsapp_link = "https://web.whatsapp.com/send?phone={$numero}&text={$encoded_message}";
+                                            }
                                         @endphp
 
-
-
-                                        <a href="{!! 'https://wa.me/' . $numero . '?text=' . urlencode($message) !!}" 
-                                           target="_blank" 
-                                           class="btn btn-success btn-sm whatsapp-btn shadow-sm"
-                                           data-bs-toggle="tooltip"
-                                           data-bs-title="{{ $message }}">
+                                        {{-- Bouton WhatsApp final --}}
+                                        <a href="{{ $whatsapp_link }}" 
+                                        target="_blank" 
+                                        class="btn btn-success btn-sm whatsapp-btn shadow-sm"
+                                        data-bs-toggle="tooltip"
+                                        data-bs-title="{{ $message }}">
                                             <i class="fab fa-whatsapp"></i>
                                             <span class="d-none d-md-inline">Relancer</span>
                                         </a>
                                     </div>
                                 </td>
+
                             </tr>
                             @endforeach
                         </tbody>

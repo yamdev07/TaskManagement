@@ -204,41 +204,52 @@
                                 <td>{{ number_format($client->montant, 0, ',', ' ') }} F</td>
                                 <td class="pe-4">
                                     @php
+                                        // Nettoyage du numéro
                                         $numero_brut = preg_replace('/[^0-9]/', '', $client->contact);
                                         if (strlen($numero_brut) === 8) { 
                                             $numero_brut = '229' . $numero_brut; 
                                         }
 
+                                        // Format de la date avec namespace complet
                                         $date = $client->date_reabonnement
                                             ? \Carbon\Carbon::parse($client->date_reabonnement)->format('d/m/Y')
                                             : 'bientôt';
 
-                                        // Ici on met des vrais \n
-                                        $message_whatsapp = "Bonjour cher(e) client(e) {$client->nom_client},\n"
-                                            . "Nous vous notifions que votre abonnement Internet arrive à échéance le {$date}.\n\n"
-                                            . "Nous vous prions de bien vouloir procéder au réabonnement pour éviter une interruption de vos services.\n\n"
-                                            . "ANYXTECH - Grandissons ensemble !\n\n"
-                                            . "📱 MomoPay : *880*41*833398*{$client->montant}#\n"
-                                            . "📞 Services clientèle : 0141421563 / 0152415241";
+                                        // Message clair
+                                        $message_whatsapp = <<<MSG
+                                Bonjour cher(e) client(e) {$client->nom_client},
+                                Nous vous notifions que votre abonnement Internet arrive à échéance le {$date}.
 
-                                        // Encoder correctement
+                                Nous vous prions de bien vouloir procéder au réabonnement pour éviter une interruption de vos services.
+
+                                ANYXTECH - Grandissons ensemble !
+
+                                📱 MomoPay : *880*41*833398*{$client->montant}#
+                                📞 Services clientèle : 0141421563 / 0152415241
+                                MSG;
+
+                                        // Encodage
                                         $encoded_message = rawurlencode($message_whatsapp);
 
-                                        $whatsapp_link = "https://wa.me/{$numero_brut}?text={$encoded_message}";
+                                        // Lien WhatsApp
+                                        $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+                                        if (preg_match('/Mobile|Android|iPhone|iPad|iPod/i', $user_agent)) {
+                                            $whatsapp_link = "https://api.whatsapp.com/send?phone={$numero_brut}&text={$encoded_message}";
+                                        } else {
+                                            $whatsapp_link = "https://web.whatsapp.com/send?phone={$numero_brut}&text={$encoded_message}";
+                                        }
                                     @endphp
 
-
-                                    {{-- NOUVEAU LIEN WHATSAPP SIMPLIFIÉ --}}
                                     <a href="{{ $whatsapp_link }}" 
-                                       target="_blank" {{-- Ouvre dans un nouvel onglet --}}
-                                       class="btn btn-success btn-sm whatsapp-btn shadow-sm"
-                                       data-bs-toggle="tooltip"
-                                       data-bs-title="{{ $message_whatsapp }}">
+                                    target="_blank"
+                                    class="btn btn-success btn-sm whatsapp-btn shadow-sm"
+                                    data-bs-toggle="tooltip"
+                                    data-bs-title="{{ $message_whatsapp }}">
                                         <i class="fab fa-whatsapp"></i>
                                         <span class="d-none d-md-inline">Relancer</span>
                                     </a>
-                                    {{-- FIN DU NOUVEAU LIEN WHATSAPP SIMPLIFIÉ --}}
                                 </td>
+
                             </tr>
                             @endforeach
                         </tbody>
