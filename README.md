@@ -29,32 +29,29 @@ Elle permet aux utilisateurs de gérer efficacement leurs tâches : création, m
 
 ### 1. Cloner le dépôt
 
-```bash
+````bash
 git clone https://github.com/yamdev07/TaskManagement.git
 cd TaskManagement
-
-1. Cloner le dépôt
+````
+### 2. Installer les dépendances PHP
 bash
 Copier
 Modifier
-git clone https://github.com/yamdev07/TaskManagement.git
-cd TaskManagement
-2. Installer les dépendances PHP
-bash
-Copier
-Modifier
+````
 composer install
-3. Copier le fichier d’environnement
+
+````
+### 3. Copier le fichier d’environnement
 bash
 Copier
 Modifier
 cp .env.example .env
-4. Générer la clé d'application
+6. Générer la clé d'application
 bash
 Copier
 Modifier
 php artisan key:generate
-5. Configurer la base de données
+7. Configurer la base de données
 Dans le fichier .env, modifie ces lignes selon ta configuration MySQL :
 
 env
